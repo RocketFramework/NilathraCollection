@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F5F3EF;
+  --foreground: #2B2B2B;
+  --accent-gold: #C5A572;
+  --deep-green: #1A2F2B;
+  --sand-light: #FAF9F6;
+  --charcoal: #2B2B2B;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-brand-gold: var(--accent-gold);
+  --color-brand-green: var(--deep-green);
+  --color-brand-sand: var(--background);
+  --color-brand-charcoal: var(--charcoal);
+  
+  --font-sans: var(--font-outfit);
+  --font-serif: var(--font-playfair);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-fade-in: fade-in 1s ease-out forwards;
+  --animate-slide-up: slide-up 0.8s ease-out forwards;
+  --animate-gold-shimmer: gold-shimmer 2s infinite linear;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes gold-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-brand-sand text-brand-charcoal selection:bg-brand-gold/30;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .luxury-button {
+    @apply relative overflow-hidden px-8 py-3 bg-brand-green text-white font-medium tracking-wide transition-all hover:bg-brand-green/90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .luxury-button-outline {
+    @apply px-8 py-3 border border-brand-green text-brand-green font-medium tracking-wide transition-all hover:bg-brand-green hover:text-white active:scale-95;
+  }
+  
+  .section-title {
+    @apply text-4xl md:text-5xl font-serif text-brand-green mb-4;
+  }
+  
+  .section-subtitle {
+    @apply text-brand-gold font-medium uppercase tracking-[0.2em] text-sm mb-2 block;
+  }
+}
+
+.cinematic-overlay {
+  background: linear-gradient(to bottom, rgba(26, 47, 43, 0.4), rgba(26, 47, 43, 0.7));
+}
+
+.text-gold-gradient {
+  background: linear-gradient(45deg, #C5A572, #e6d4b8, #C5A572);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gold-shimmer 4s linear infinite;
 }
