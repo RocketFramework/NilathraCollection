@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 const NavLinks = [
     { name: "Home", href: "/" },
@@ -15,6 +16,8 @@ const NavLinks = [
 ];
 
 export default function Navbar() {
+    const pathname = usePathname();
+    const isHome = pathname === "/";
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
@@ -26,11 +29,13 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    const isTransparent = isHome && !scrolled;
+
     return (
         <nav
             className={cn(
                 "fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 py-4 md:px-12",
-                scrolled ? "bg-white/90 backdrop-blur-md py-3 shadow-md" : "bg-transparent"
+                isTransparent ? "bg-transparent" : "bg-white/90 backdrop-blur-md py-3 shadow-md"
             )}
         >
             <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -46,10 +51,10 @@ export default function Navbar() {
                         </div>
                     </div>
                     <span className={cn(
-                        "font-serif text-2xl font-bold tracking-tighter transition-colors duration-500",
-                        scrolled ? "text-brand-green" : "text-white"
+                        "font-serif text-2xl font-bold tracking-tighter transition-colors duration-500 uppercase",
+                        isTransparent ? "text-white" : "text-logo-blue"
                     )}>
-                        NILTHRA <span className="text-brand-gold">COLLECTION</span>
+                        NILATHRA <span className={isTransparent ? "text-brand-gold" : "text-logo-red"}>COLLECTION</span>
                     </span>
                 </Link>
 
@@ -61,7 +66,7 @@ export default function Navbar() {
                             href={link.href}
                             className={cn(
                                 "text-sm font-medium tracking-widest uppercase transition-colors duration-300",
-                                scrolled ? "text-brand-charcoal hover:text-brand-gold" : "text-white hover:text-brand-gold"
+                                isTransparent ? "text-white hover:text-brand-gold" : "text-logo-blue hover:text-logo-red"
                             )}
                         >
                             {link.name}
@@ -71,7 +76,7 @@ export default function Navbar() {
                         href="/custom-plan"
                         className={cn(
                             "luxury-button text-sm flex items-center gap-2 truncate",
-                            scrolled ? "bg-brand-green text-white" : "bg-white text-brand-green"
+                            isTransparent ? "bg-white text-brand-green hover:bg-neutral-100" : "bg-logo-blue text-white hover:bg-logo-blue/90"
                         )}
                     >
                         Plan My Journey
@@ -80,13 +85,13 @@ export default function Navbar() {
 
                 {/* Mobile Menu Button */}
                 <button
-                    className="md:hidden text-brand-green"
+                    className="md:hidden"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     {isOpen ? (
-                        <X className={scrolled ? "text-brand-green" : "text-white"} />
+                        <X className={isTransparent ? "text-white" : "text-logo-blue"} />
                     ) : (
-                        <Menu className={scrolled ? "text-brand-green" : "text-white"} />
+                        <Menu className={isTransparent ? "text-white" : "text-logo-blue"} />
                     )}
                 </button>
             </div>

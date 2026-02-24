@@ -3,6 +3,7 @@
 import MainLayout from "@/components/layout/MainLayout";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ActivityCard from "@/components/ActivityCard";
 import {
     MapPin, Check, Sparkles, Navigation, CalendarDays,
     Compass, Utensils, BedDouble, Sun, Clock, Plus, AlertCircle,
@@ -183,29 +184,16 @@ export default function CustomPlanPage() {
                                         ))}
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {activities.filter(a => a.category === selectedCategory).map(act => {
-                                            const isSelected = selectedActivities.includes(act.id);
-                                            return (
-                                                <div
-                                                    key={act.id}
-                                                    onClick={() => toggleActivity(act.id)}
-                                                    className={`group relative p-5 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden ${isSelected ? 'border-brand-gold bg-brand-gold/5 shadow-[0_8px_30px_rgba(212,175,55,0.12)] -translate-y-1' : 'border-neutral-200 bg-white hover:border-brand-gold/50 hover:shadow-md'}`}
-                                                >
-                                                    <div className="absolute top-4 right-4 z-10">
-                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors ${isSelected ? 'bg-brand-gold border-brand-gold text-white' : 'border-neutral-300 text-transparent group-hover:border-brand-gold/50'}`}>
-                                                            <Check size={14} />
-                                                        </div>
-                                                    </div>
-                                                    <h4 className={`font-serif text-lg mb-2 pr-8 ${isSelected ? 'text-brand-green' : 'text-neutral-800'}`}>{act.activity_name}</h4>
-                                                    <p className="text-xs text-neutral-500 line-clamp-3 leading-relaxed mb-4">{act.description}</p>
-                                                    <div className="flex items-center gap-2 text-xs font-medium text-neutral-400">
-                                                        <span className="flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded-md"><Clock size={12} /> {act.duration_hours}h</span>
-                                                        <span className="flex items-center gap-1 bg-neutral-100 px-2 py-1 rounded-md"><MapPin size={12} /> {act.location_name}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto p-2">
+                                        {activities.filter(a => a.category === selectedCategory).map(act => (
+                                            <ActivityCard
+                                                key={act.id}
+                                                activity={act}
+                                                isSelected={selectedActivities.includes(act.id)}
+                                                onToggle={toggleActivity}
+                                                variant="grid"
+                                            />
+                                        ))}
                                     </div>
 
                                     <div className="flex justify-end pt-8">

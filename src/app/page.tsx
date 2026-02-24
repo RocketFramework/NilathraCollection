@@ -18,7 +18,7 @@ export default function Home() {
             <span className="section-subtitle">Since Day One</span>
             <h2 className="section-title">The Essence of Exclusivity</h2>
             <p className="text-brand-charcoal/70 leading-relaxed text-lg font-light">
-              Nilthra Collection was founded on a simple promise: to reveal the true heart of Sri Lanka to those who seek nothing but the finest. Our deep-rooted heritage and local expertise allow us to open doors that remain closed to others.
+              Nilathra Collection was founded on a simple promise: to reveal the true heart of Sri Lanka to those who seek nothing but the finest. Our deep-rooted heritage and local expertise allow us to open doors that remain closed to others.
             </p>
             <p className="text-brand-charcoal/70 leading-relaxed text-lg font-light italic border-l-4 border-brand-gold pl-6">
               "We don't just plan trips; we curate legacies of travel that stay with you forever."
@@ -62,7 +62,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <Quote className="mx-auto mb-10 text-brand-gold opacity-50" size={60} />
           <h2 className="font-serif text-3xl md:text-5xl leading-tight mb-12">
-            "An unparalleled experience. From the private villa in Ella to the seamless VIP handling at Colombo, Nilthra Collection exceeded every expectation. True Sri Lankan luxury."
+            "An unparalleled experience. From the private villa in Ella to the seamless VIP handling at Colombo, Nilathra Collection exceeded every expectation. True Sri Lankan luxury."
           </h2>
           <div className="flex flex-col items-center justify-center gap-4">
             <div className="w-16 h-16 rounded-full border-2 border-brand-gold p-1">

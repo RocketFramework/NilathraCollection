@@ -33,7 +33,7 @@ export default function ContactPage() {
                                     </div>
                                     <div>
                                         <p className="text-xs uppercase tracking-widest text-brand-charcoal/50 font-bold mb-1">Email Concierge</p>
-                                        <p className="text-xl font-serif">concierge@nilthra.com</p>
+                                        <p className="text-xl font-serif">concierge@nilathra.com</p>
                                     </div>
                                 </div>
 
@@ -111,7 +111,7 @@ export default function ContactPage() {
                     <div className="bg-white p-6 shadow-2xl flex items-center gap-4 rounded-sm border-t-2 border-brand-gold">
                         <MapPin className="text-brand-gold" size={32} />
                         <div>
-                            <p className="font-serif text-xl">Nilthra Collection</p>
+                            <p className="font-serif text-xl">Nilathra Collection</p>
                             <p className="text-xs text-brand-charcoal/50 uppercase tracking-widest">Colombo, Sri Lanka</p>
                         </div>
                     </div>

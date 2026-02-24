@@ -13,17 +13,17 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Nilthra Collection | Luxury Curated Sri Lankan Travel",
+  title: "Nilathra Collection | Luxury Curated Sri Lankan Travel",
   description: "Experience the pinnacle of luxury travel in Sri Lanka. Tailored VIP experiences, deluxe retreats, and custom-designed journeys for the discerning traveler.",
   keywords: ["luxury travel sri lanka", "VIP travel sri lanka", "private tours sri lanka", "curated travel", "luxury resorts sri lanka"],
-  authors: [{ name: "Nilthra Collection" }],
+  authors: [{ name: "Nilathra Collection" }],
   openGraph: {
-    title: "Nilthra Collection | Luxury Curated Sri Lankan Travel",
+    title: "Nilathra Collection | Luxury Curated Sri Lankan Travel",
     description: "Experience the pinnacle of luxury travel in Sri Lanka. Tailored VIP experiences, deluxe retreats, and custom-designed journeys.",
     type: "website",
     locale: "en_US",
-    url: "https://nilthracollection.com",
-    siteName: "Nilthra Collection",
+    url: "https://nilathracollection.com",
+    siteName: "Nilathra Collection",
   },
 };
 

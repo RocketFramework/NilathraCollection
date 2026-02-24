@@ -16,8 +16,8 @@ export default function Footer() {
                                 className="object-contain"
                             />
                         </div>
-                        <span className="font-serif text-2xl font-bold tracking-tighter">
-                            NILTHRA <span className="text-brand-gold">COLLECTION</span>
+                        <span className="font-serif text-2xl font-bold tracking-tighter uppercase">
+                            NILATHRA <span className="text-brand-gold">COLLECTION</span>
                         </span>
                     </Link>
                     <p className="text-white/70 text-sm leading-relaxed max-w-xs">
@@ -63,14 +63,14 @@ export default function Footer() {
                         </li>
                         <li className="flex items-center gap-3">
                             <Mail className="text-brand-gold shrink-0" size={18} />
-                            <span className="text-white/70 text-sm">concierge@nilthra.com</span>
+                            <span className="text-white/70 text-sm">concierge@nilathra.com</span>
                         </li>
                     </ul>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50 uppercase tracking-widest">
-                <p>&copy; {new Date().getFullYear()} Nilthra Collection. All Rights Reserved.</p>
+                <p>&copy; {new Date().getFullYear()} Nilathra Collection. All Rights Reserved.</p>
                 <div className="flex gap-8">
                     <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
                     <Link href="/terms" className="hover:text-white">Terms of Service</Link>

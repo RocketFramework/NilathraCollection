@@ -7,6 +7,8 @@
   --deep-green: #1A2F2B;
   --sand-light: #FAF9F6;
   --charcoal: #2B2B2B;
+  --logo-blue: #1D265A;
+  --logo-red: #E11B22;
 }
 
 @theme inline {
@@ -14,7 +16,9 @@
   --color-brand-green: var(--deep-green);
   --color-brand-sand: var(--background);
   --color-brand-charcoal: var(--charcoal);
-  
+  --color-logo-blue: var(--logo-blue);
+  --color-logo-red: var(--logo-red);
+
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-playfair);
 
@@ -23,16 +27,35 @@
   --animate-gold-shimmer: gold-shimmer 2s infinite linear;
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
+
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   @keyframes gold-shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
   }
 }
 
@@ -40,8 +63,13 @@
   body {
     @apply bg-brand-sand text-brand-charcoal selection:bg-brand-gold/30;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-serif tracking-tight;
   }
 }
@@ -50,19 +78,19 @@
   .glass-card {
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
   }
-  
+
   .luxury-button {
     @apply relative overflow-hidden px-8 py-3 bg-brand-green text-white font-medium tracking-wide transition-all hover:bg-brand-green/90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
-  
+
   .luxury-button-outline {
     @apply px-8 py-3 border border-brand-green text-brand-green font-medium tracking-wide transition-all hover:bg-brand-green hover:text-white active:scale-95;
   }
-  
+
   .section-title {
     @apply text-4xl md:text-5xl font-serif text-brand-green mb-4;
   }
-  
+
   .section-subtitle {
     @apply text-brand-gold font-medium uppercase tracking-[0.2em] text-sm mb-2 block;
   }
