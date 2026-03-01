@@ -16,7 +16,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState<Partial<Driver>>({
-        first_name: "", last_name: "", phone: "", license_number: "", is_suspended: false,
+        first_name: "", last_name: "", phone: "", license_number: "", nic_number: "", is_suspended: false,
         payment_details: {}
     });
 
@@ -26,7 +26,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
                 setFormData({ ...driver, payment_details: driver.payment_details || {} });
             } else {
                 setFormData({
-                    first_name: "", last_name: "", phone: "", license_number: "", is_suspended: false,
+                    first_name: "", last_name: "", phone: "", license_number: "", nic_number: "", is_suspended: false,
                     payment_details: {}
                 });
             }
@@ -103,6 +103,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
                             <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">License Number</label>
                                 <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.license_number || ''} onChange={e => handleChange('license_number', e.target.value)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">NIC Number</label>
+                                <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.nic_number || ''} onChange={e => handleChange('nic_number', e.target.value)} />
                             </div>
                             <div className="col-span-2 mt-2">
                                 <label className="flex items-center gap-2 cursor-pointer group">

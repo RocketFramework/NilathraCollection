@@ -94,6 +94,7 @@ ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS email VARCHAR(25
 ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS lat NUMERIC(10, 8);
 ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS lng NUMERIC(11, 8);
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS nic_number VARCHAR(100);
 
 ALTER TABLE public.transport_providers DROP COLUMN IF EXISTS vehicle_types;
 
@@ -142,5 +143,9 @@ END $$;
 ALTER TABLE public.daily_activities DROP COLUMN vendor_id;
 ALTER TABLE public.daily_activities ADD COLUMN vendor_id UUID REFERENCES public.vendors(id);
 
--- 7. Drop obsolete activity_vendors table (WARNING: This destroys old data)
+-- 7. Add Identification Fields
+ALTER TABLE public.drivers ADD COLUMN IF NOT EXISTS nic_number VARCHAR(100);
+ALTER TABLE public.tour_guides ADD COLUMN IF NOT EXISTS license_id VARCHAR(100);
+
+-- 8. Drop obsolete activity_vendors table (WARNING: This destroys old data)
 DROP TABLE IF EXISTS public.activity_vendors CASCADE;

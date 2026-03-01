@@ -56,6 +56,7 @@ export interface Driver {
     last_name?: string;
     phone?: string;
     license_number?: string;
+    nic_number?: string;
     is_suspended?: boolean;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
@@ -83,6 +84,7 @@ export interface TransportProvider {
     address?: string;
     lat?: number;
     lng?: number;
+    nic_number?: string;
     is_suspended?: boolean;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
@@ -95,6 +97,7 @@ export interface TourGuide {
     last_name?: string;
     phone?: string;
     languages?: string[];
+    license_id?: string;
     is_suspended?: boolean;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
