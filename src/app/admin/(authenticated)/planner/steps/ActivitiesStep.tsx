@@ -1,11 +1,10 @@
 "use client";
 
 import { TripData, ActivityBooking } from "../types";
-import { Compass, Search, MapPin, Clock, Plus, Trash2, Check, AlertTriangle } from "lucide-react";
+import { Compass, Search, MapPin, Clock, Plus, Trash2, Check, AlertTriangle, Users, Calendar, Map, Activity as ActivityIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Activity, fetchActivities } from "@/data/activities";
 import { MasterDataService, Vendor } from "@/services/master-data.service";
-import VendorLookupModal from "../components/VendorLookupModal";
 
 export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripData, updateActivities: (acts: ActivityBooking[]) => void }) {
 
@@ -13,9 +12,6 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
     const [allVendors, setAllVendors] = useState<Vendor[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setIsLoading] = useState(true);
-
-    const [lookupBookingId, setLookupBookingId] = useState<string | null>(null);
-    const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
     if (!tripData.serviceScopes.includes('Plan Activities & Experiences')) {
         return (
@@ -70,37 +66,6 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
         }
     };
 
-    const updateBookingField = (id: string, field: keyof ActivityBooking, value: any) => {
-        updateActivities(activities.map(a => a.id === id ? { ...a, [field]: value } : a));
-    };
-
-    const handleVendorSelect = (bookingId: string, vendorId: string, providedPrice?: number) => {
-        const booking = activities.find(a => a.id === bookingId);
-        if (!booking) return;
-
-        if (!vendorId) {
-            updateActivities(activities.map(a => a.id === bookingId ? { ...a, vendorId: undefined, vendorPrice: undefined } : a));
-            return;
-        }
-
-        let price = providedPrice;
-
-        // Fallback just in case our parent still has the vendor_activities mapping
-        if (price === undefined) {
-            const vendor = allVendors.find(v => v.id === vendorId);
-            if (vendor && vendor.vendor_activities) {
-                const va = vendor.vendor_activities.find(v => Number(v.activity_id) === Number(booking.activityId));
-                if (va && va.vendor_price) price = va.vendor_price;
-            }
-        }
-
-        updateActivities(activities.map(a => a.id === bookingId ? { ...a, vendorId, vendorPrice: price } : a));
-    };
-
-    const openVendorLookup = (bookingId: string) => {
-        setLookupBookingId(bookingId);
-        setIsVendorModalOpen(true);
-    };
 
     const filteredCatalog = allActivities.filter(a =>
         a.activity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,7 +73,35 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
         a.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const activeLookupBooking = lookupBookingId ? activities.find(a => a.id === lookupBookingId) : null;
+    const katunayake = { lat: 7.1725, lng: 79.8853 };
+    const calculateRoadDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c * 1.3;
+    };
+
+    let totalDistanceInfo = 0;
+    let currentLoc = katunayake;
+    let totalHours = 0;
+
+    activities.forEach(booking => {
+        const act = booking.activityData;
+        totalHours += (act.duration_hours || 2);
+        if (act.lat && act.lng) {
+            totalDistanceInfo += calculateRoadDistance(currentLoc.lat, currentLoc.lng, act.lat, act.lng);
+            currentLoc = { lat: act.lat, lng: act.lng };
+        }
+    });
+
+    if (activities.length > 0) {
+        totalDistanceInfo += calculateRoadDistance(currentLoc.lat, currentLoc.lng, katunayake.lat, katunayake.lng);
+    }
+
+    const travelers = (tripData.profile.adults || 0) + (tripData.profile.children || 0) + (tripData.profile.infants || 0);
+    const durationDays = tripData.profile.durationDays || 0;
 
     return (
         <div className="space-y-8">
@@ -117,7 +110,56 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
                     <h3 className="text-xl font-serif text-brand-green flex items-center gap-2">
                         <Compass size={20} className="text-brand-gold" /> Activity & Experience Curation
                     </h3>
-                    <p className="text-sm text-neutral-500 mt-1">Select from catalog and track supplier bookings.</p>
+                    <p className="text-sm text-neutral-500 mt-1">Select and group your activities. We'll handle routing and vendor assignment later.</p>
+                </div>
+            </div>
+
+            {/* Trip Metrics Dashboard */}
+            <div className="bg-white rounded-2xl p-5 border border-neutral-200 flex flex-wrap gap-8 items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="bg-blue-50 p-2.5 rounded-xl">
+                        <Calendar size={20} className="text-blue-500" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">Trip Duration</span>
+                        <span className="text-lg font-bold text-brand-charcoal leading-none mt-0.5">{durationDays} <span className="text-xs font-medium text-neutral-500">Days</span></span>
+                    </div>
+                </div>
+
+                <div className="w-px h-10 bg-neutral-200 hidden sm:block"></div>
+
+                <div className="flex items-center gap-3">
+                    <div className="bg-purple-50 p-2.5 rounded-xl">
+                        <Users size={20} className="text-purple-500" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">Travelers</span>
+                        <span className="text-lg font-bold text-brand-charcoal leading-none mt-0.5">{travelers} <span className="text-xs font-medium text-neutral-500">Pax</span></span>
+                    </div>
+                </div>
+
+                <div className="w-px h-10 bg-neutral-200 hidden lg:block"></div>
+
+                <div className="flex items-center gap-3">
+                    <div className="bg-orange-50 p-2.5 rounded-xl">
+                        <ActivityIcon size={20} className="text-orange-500" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">Est. Activity Time</span>
+                        <span className="text-lg font-bold text-brand-charcoal leading-none mt-0.5">{totalHours.toFixed(1)} <span className="text-xs font-medium text-neutral-500">Hours</span></span>
+                    </div>
+                </div>
+
+                <div className="w-px h-10 bg-neutral-200 hidden sm:block"></div>
+
+                <div className="flex items-center gap-3">
+                    <div className="bg-brand-green/10 p-2.5 rounded-xl">
+                        <Map size={20} className="text-brand-green" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">Approx. Distance</span>
+                        <span className="text-lg font-bold text-brand-charcoal leading-none mt-0.5">{Math.round(totalDistanceInfo)} <span className="text-xs font-medium text-neutral-500">km</span></span>
+                    </div>
                 </div>
             </div>
 
@@ -207,73 +249,6 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
                                         </button>
                                     </div>
 
-                                    {/* Bookng Grid */}
-                                    <div className="grid grid-cols-2 gap-3 pb-3 border-b border-neutral-100">
-                                        <div className="col-span-2">
-                                            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide block mb-1">Status Level</label>
-                                            <select
-                                                value={booking.status}
-                                                onChange={e => updateBookingField(booking.id, 'status', e.target.value)}
-                                                className={`w-full text-xs font-medium cursor-pointer rounded-lg px-3 py-2 border focus:outline-none transition-colors appearance-none
-                                                    ${booking.status === 'Voucher Issued' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                        booking.status === 'Confirmed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                            booking.status === 'Random / Walk-in' ? 'bg-neutral-100 text-neutral-600 border-neutral-200' :
-                                                                'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
-                                            >
-                                                <option value="Random / Walk-in">Random / Walk-in (No Pre-booking req.)</option>
-                                                <option value="Tentative Booking">Tentative Booking Hold</option>
-                                                <option value="Confirmed">Confirmed Booking</option>
-                                                <option value="Paid">Processed & Paid</option>
-                                                <option value="Voucher Issued">🟢 Final Voucher Issued</option>
-                                            </select>
-                                        </div>
-                                        <div className="col-span-2 mt-1">
-                                            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide block mb-1">Preferred Vendor</label>
-                                            <button
-                                                onClick={() => openVendorLookup(booking.id)}
-                                                className="w-full text-left text-xs font-medium cursor-pointer rounded-lg px-3 py-2 border border-neutral-200 focus:outline-none focus:border-brand-gold bg-neutral-50 hover:bg-neutral-100 transition-colors flex justify-between items-center"
-                                            >
-                                                <span className="truncate pr-2">
-                                                    {booking.vendorId
-                                                        ? (() => {
-                                                            const tv = allVendors.find(v => v.id === booking.vendorId);
-                                                            return tv ? `${tv.name} ${booking.vendorPrice ? `($${booking.vendorPrice})` : ''}` : "Select Preferred Vendor";
-                                                        })()
-                                                        : "No vendor assigned (Internal/Direct)"}
-                                                </span>
-                                                <Search size={14} className="text-neutral-400 shrink-0" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {booking.status !== 'Random / Walk-in' && (
-                                        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div>
-                                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide block mb-1">Reference</label>
-                                                <input type="text" placeholder="REF-XYZ" value={booking.bookingReference} onChange={e => updateBookingField(booking.id, 'bookingReference', e.target.value)} className="w-full text-xs box-border rounded-md px-2 py-1.5 border border-neutral-200 bg-neutral-50 focus:bg-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold" />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide block mb-1">Cut-Off</label>
-                                                <input type="date" value={booking.cutOffDate} onChange={e => updateBookingField(booking.id, 'cutOffDate', e.target.value)} className="w-full text-xs box-border rounded-md px-2 py-1.5 border border-neutral-200 bg-neutral-50 focus:bg-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold" />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide block mb-1 flex items-center gap-1">Booking Value & References <AlertTriangle size={10} className="text-yellow-500" /></label>
-                                                <div className="flex gap-2">
-                                                    <div className="w-1/3 flex items-center border border-neutral-200 bg-neutral-50 rounded-md focus-within:border-brand-gold focus-within:ring-1 focus-within:ring-brand-gold px-2 transition-all">
-                                                        <span className="text-xs text-neutral-400">$</span>
-                                                        <input
-                                                            type="number"
-                                                            placeholder="Amount"
-                                                            value={booking.vendorPrice || ''}
-                                                            onChange={e => updateBookingField(booking.id, 'vendorPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                                            className="w-full text-xs box-border outline-none py-1.5 bg-transparent ml-1"
-                                                        />
-                                                    </div>
-                                                    <input type="text" placeholder="Contact Person" value={booking.supplierContactPerson || ''} onChange={e => updateBookingField(booking.id, 'supplierContactPerson', e.target.value)} className="flex-1 text-xs box-border rounded-md px-2 py-1.5 border border-neutral-200 bg-neutral-50 focus:bg-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             ))
                         )}
@@ -281,15 +256,7 @@ export function ActivitiesStep({ tripData, updateActivities }: { tripData: TripD
                 </div>
             </div>
 
-            {activeLookupBooking && (
-                <VendorLookupModal
-                    isOpen={isVendorModalOpen}
-                    onClose={() => { setIsVendorModalOpen(false); setLookupBookingId(null); }}
-                    activityId={activeLookupBooking.activityId}
-                    selectedVendorId={activeLookupBooking.vendorId}
-                    onSelect={(vendorId, price) => handleVendorSelect(activeLookupBooking.id, vendorId, price)}
-                />
-            )}
+
         </div>
     );
 }
