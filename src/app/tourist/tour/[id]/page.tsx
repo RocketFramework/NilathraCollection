@@ -1,36 +1,56 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MapPin, Phone, Mail, MessageSquare, Download, CheckCircle2, ChevronRight, BedDouble, Calendar, ArrowLeft } from "lucide-react";
+import { MapPin, Phone, Mail, MessageSquare, Download, CheckCircle2, ChevronRight, BedDouble, Calendar, ArrowLeft, ReceiptText } from "lucide-react";
 
 export default function TourDetailsPage() {
     const params = useParams();
     const id = params.id as string;
 
-    // Dummy specific data for mockup purposes
-    const tour = {
-        title: "14-Day Complete Sri Lanka Circuit",
-        status: "Active",
-        destinations: ["Colombo", "Kandy", "Ella", "Yala", "Galle"],
-        totalPrice: "$4,500 USD",
-        paidAmount: "$1,500 USD",
-        agent: {
-            name: "Samadhi Silva",
-            phone: "+94 77 123 4567",
-            email: "samadhi@nilathra.com",
-            photoInitials: "SS"
-        },
-        invoices: [
-            { id: 'INV-001', amount: "$1,500", status: 'Paid', date: 'Oct 01, 2026' },
-            { id: 'INV-002', amount: "$3,000", status: 'Pending', date: 'Oct 25, 2026' },
-        ],
-        itinerarySummary: [
-            { day: 1, title: "Arrival & Negombo Rest", hotel: "The Jetwing Sea" },
-            { day: 2, title: "Transfer to Kandy & Temple", hotel: "Kandy Heritage Resort" },
-            { day: 3, title: "Scenic Train to Ella", hotel: "98 Acres Resort" },
-        ]
-    };
+    const [tour, setTour] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            setIsLoading(true);
+            try {
+                const { TouristService } = await import('@/services/tourist.service');
+                const data = await TouristService.getTourDetails(id);
+                setTour(data);
+            } catch (error) {
+                console.error("Failed to load tour details:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchDetails();
+        }
+    }, [id]);
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-gold"></div>
+            </div>
+        );
+    }
+
+    if (!tour) {
+        return (
+            <div className="text-center py-20 text-neutral-500">
+                <MapPin size={48} className="mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-bold text-brand-charcoal mb-2">Tour Not Found</h3>
+                <p>We couldn't find the details for this journey or it hasn't been approved yet.</p>
+                <Link href="/tourist" className="mt-4 inline-block px-6 py-2 bg-brand-charcoal text-white rounded-lg px-4 py-2 font-medium hover:bg-neutral-800 transition-colors">
+                    Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -51,29 +71,33 @@ export default function TourDetailsPage() {
                         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <span className="inline-block px-3 py-1 bg-brand-green/10 text-brand-green text-xs font-bold uppercase tracking-widest rounded-full mb-3">
+                                <span className={`inline-block px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full mb-3 ${tour.status === 'Review Ready' ? 'bg-blue-100 text-blue-700' : 'bg-brand-green/10 text-brand-green'}`}>
                                     {tour.status} Tour
                                 </span>
                                 <h1 className="text-3xl font-serif text-brand-charcoal font-bold">{tour.title}</h1>
-                                <p className="text-neutral-500 flex items-center gap-2 mt-2 font-medium">
-                                    <MapPin size={16} className="text-brand-gold" /> {tour.destinations.join(' → ')}
-                                </p>
+                                {tour.destinations && tour.destinations.length > 0 && (
+                                    <p className="text-neutral-500 flex items-center gap-2 mt-2 font-medium">
+                                        <MapPin size={16} className="text-brand-gold" /> {tour.destinations.join(' → ')}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
                         <div className="p-4 bg-neutral-50 rounded-2xl flex flex-wrap gap-8">
                             <div>
                                 <p className="text-xs text-neutral-400 uppercase tracking-wider font-semibold">Start Date</p>
-                                <p className="font-bold text-brand-charcoal">Nov 10, 2026</p>
+                                <p className="font-bold text-brand-charcoal">{tour.startDate ? new Date(tour.startDate).toLocaleDateString() : 'TBD'}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-neutral-400 uppercase tracking-wider font-semibold">Duration</p>
-                                <p className="font-bold text-brand-charcoal">14 Days / 13 Nights</p>
+                                <p className="font-bold text-brand-charcoal">{tour.durationDays ? `${tour.durationDays} Days / ${tour.durationDays - 1} Nights` : 'TBD'}</p>
                             </div>
-                            <div>
-                                <p className="text-xs text-neutral-400 uppercase tracking-wider font-semibold">Travelers</p>
-                                <p className="font-bold text-brand-charcoal">2 Adults</p>
-                            </div>
+                            {tour.travelers && (
+                                <div>
+                                    <p className="text-xs text-neutral-400 uppercase tracking-wider font-semibold">Travelers</p>
+                                    <p className="font-bold text-brand-charcoal">{tour.travelers}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -87,23 +111,27 @@ export default function TourDetailsPage() {
                         </div>
 
                         <div className="space-y-6">
-                            {tour.itinerarySummary.map((day) => (
-                                <div key={day.day} className="flex gap-6 group">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-10 h-10 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center font-bold font-serif shadow-sm group-hover:bg-brand-green group-hover:text-white transition-colors">
-                                            {day.day}
+                            {tour.itinerarySummary.length === 0 ? (
+                                <p className="text-neutral-500 italic">Your agent is currently building your day-by-day itinerary.</p>
+                            ) : (
+                                tour.itinerarySummary.map((day: any) => (
+                                    <div key={day.day} className="flex gap-6 group">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-10 h-10 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center font-bold font-serif shadow-sm group-hover:bg-brand-green group-hover:text-white transition-colors">
+                                                {day.day}
+                                            </div>
+                                            <div className="w-px h-full bg-neutral-100 mt-2" />
                                         </div>
-                                        <div className="w-px h-full bg-neutral-100 mt-2" />
-                                    </div>
-                                    <div className="pb-6 w-full">
-                                        <h3 className="text-lg font-bold text-brand-charcoal">{day.title}</h3>
-                                        <div className="flex items-center gap-2 text-sm text-neutral-500 mt-2">
-                                            <BedDouble size={14} className="text-brand-gold" />
-                                            {day.hotel}
+                                        <div className="pb-6 w-full">
+                                            <h3 className="text-lg font-bold text-brand-charcoal">{day.title}</h3>
+                                            <div className="flex items-center gap-2 text-sm text-neutral-500 mt-2">
+                                                <BedDouble size={14} className="text-brand-gold" />
+                                                {day.hotel}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -147,38 +175,37 @@ export default function TourDetailsPage() {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-neutral-500 font-medium">Balance Due</span>
-                                <span className="text-red-600 font-bold text-xl">$3,000 USD</span>
+                                <span className="text-red-600 font-bold text-xl">{tour.totalPrice}</span>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-400 mb-3">Invoices</h4>
-                            {tour.invoices.map(inv => (
-                                <div key={inv.id} className="flex items-center justify-between p-3 rounded-xl border border-neutral-100 hover:border-brand-gold/40 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${inv.status === 'Paid' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                            {inv.status === 'Paid' ? <CheckCircle2 size={16} /> : <ReceiptText size={16} />}
+                        {tour.invoices && tour.invoices.length > 0 && (
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-400 mb-3">Invoices</h4>
+                                {tour.invoices.map((inv: any) => (
+                                    <div key={inv.id} className="flex items-center justify-between p-3 rounded-xl border border-neutral-100 hover:border-brand-gold/40 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${inv.status === 'Paid' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {inv.status === 'Paid' ? <CheckCircle2 size={16} /> : <ReceiptText size={16} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-brand-charcoal">{inv.id}</p>
+                                                <p className="text-xs text-neutral-400">{inv.date}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-brand-charcoal">{inv.id}</p>
-                                            <p className="text-xs text-neutral-400">{inv.date}</p>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold">{inv.amount}</p>
+                                            <p className={`text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {inv.status}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-bold">{inv.amount}</p>
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {inv.status}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
-// Ensure lucide icon ReceiptText is handled properly, if not imported we use default FileText. But lucide has ReceiptText.
-import { ReceiptText } from "lucide-react";

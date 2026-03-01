@@ -33,6 +33,7 @@ export interface TripProfile {
     budgetTotal: number;
     budgetPerPerson: number;
     travelStyle: TravelStyle;
+    departureCountry?: string;
     specialConditions: {
         dietary: string;
         medical: string;
@@ -67,6 +68,7 @@ export interface FlightBooking {
 export interface AccommodationBooking {
     id: string;
     nightIndex: number; // e.g. 1 for first night
+    hotelId?: string; // Links to 'hotels' table
     hotelName: string;
     stayClass: string;
     address: string;
@@ -77,6 +79,7 @@ export interface AccommodationBooking {
     rateCardUrl: string;
     roomType: string;
     numberOfRooms: number;
+    numberOfGuests?: number;
     pricePerNight: number;
     mealPlan: 'BB' | 'HB' | 'FB' | 'AI';
     status: 'Tentative' | 'Confirmed';

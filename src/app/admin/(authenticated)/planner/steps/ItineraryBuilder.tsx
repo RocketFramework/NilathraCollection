@@ -1,7 +1,7 @@
 "use client";
 
 import { TripData, InternalItineraryBlock, AccommodationBooking, TransportBooking } from "../types";
-import { ListTree, MapPin, CalendarDays, Navigation, Utensils, BedDouble, AlertCircle, GripVertical, Rocket, RefreshCcw, ArrowUp, ArrowDown, Activity as ActivityIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { ListTree, MapPin, CalendarDays, Navigation, Utensils, BedDouble, AlertCircle, GripVertical, Rocket, RefreshCcw, ArrowUp, ArrowDown, Activity as ActivityIcon, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { generateRoutePlan, GeoLocation } from "@/lib/route-engine";
 import { useState } from "react";
 import { Activity } from "@/data/activities";
@@ -165,6 +165,87 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
         updateData({ itinerary: tripData.itinerary.map(b => b.id === blockId ? { ...b, dayNumber: targetDay } : b) });
     };
 
+    const timeToMins = (timeStr: string) => {
+        if (!timeStr || !timeStr.includes(':')) return 0;
+        const [hStr, mStr] = timeStr.split(':');
+        const h = parseInt(hStr, 10);
+        const m = parseInt(mStr, 10);
+        if (isNaN(h) || isNaN(m)) return 0;
+        return h * 60 + m;
+    };
+
+    const shiftTime = (timeStr: string, shiftMins: number) => {
+        if (!timeStr || !timeStr.includes(':')) return timeStr;
+        const [hStr, mStr] = timeStr.split(':');
+        let h = parseInt(hStr, 10);
+        let m = parseInt(mStr, 10);
+        if (isNaN(h) || isNaN(m)) return timeStr;
+
+        let totalMins = h * 60 + m + shiftMins;
+        if (totalMins < 0) totalMins = (24 * 60) + (totalMins % (24 * 60));
+        totalMins = totalMins % (24 * 60);
+
+        const newH = Math.floor(totalMins / 60);
+        const newM = totalMins % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    };
+
+    const removeBlock = (blockId: string, dayNumber: number) => {
+        const dayBlocks = tripData.itinerary.filter(b => b.dayNumber === dayNumber).sort((a, b) => timeToMins(a.startTime) - timeToMins(b.startTime));
+        const blockIndex = dayBlocks.findIndex(b => b.id === blockId);
+        if (blockIndex === -1) return;
+
+        const blockToRemove = dayBlocks[blockIndex];
+
+        let shiftMins = 0;
+        if (blockIndex + 1 < dayBlocks.length) {
+            const startMins = timeToMins(blockToRemove.startTime);
+            const nextStartMins = timeToMins(dayBlocks[blockIndex + 1].startTime);
+            shiftMins = nextStartMins - startMins;
+            if (shiftMins < 0) shiftMins += 24 * 60; // Just in case it goes past midnight
+        }
+
+        dayBlocks.splice(blockIndex, 1);
+
+        for (let i = blockIndex; i < dayBlocks.length; i++) {
+            dayBlocks[i] = {
+                ...dayBlocks[i],
+                startTime: shiftTime(dayBlocks[i].startTime, -shiftMins),
+                endTime: shiftTime(dayBlocks[i].endTime, -shiftMins)
+            };
+        }
+
+        const otherDays = tripData.itinerary.filter(b => b.dayNumber !== dayNumber);
+        updateData({ itinerary: [...otherDays, ...dayBlocks].sort((a, b) => a.dayNumber - b.dayNumber) });
+    };
+
+    const removeDay = (dayStr: string) => {
+        const removedDayNum = Number(dayStr);
+        const updatedItinerary = tripData.itinerary
+            .filter(b => b.dayNumber !== removedDayNum)
+            .map(b => {
+                // Shift subsequent days back by 1
+                if (b.dayNumber > removedDayNum) {
+                    return { ...b, dayNumber: b.dayNumber - 1 };
+                }
+                return b;
+            });
+
+        const updatedHotels = tripData.accommodations
+            .filter(h => h.nightIndex !== removedDayNum)
+            .map(h => {
+                if (h.nightIndex > removedDayNum) {
+                    return { ...h, nightIndex: h.nightIndex - 1 };
+                }
+                return h;
+            });
+
+        updateData({
+            itinerary: updatedItinerary,
+            accommodations: updatedHotels
+        });
+    };
+
     const iconType = (type: string) => {
         switch (type) {
             case 'activity': return <MapPin size={16} className="text-orange-500" />;
@@ -222,9 +303,14 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                         <div key={dayStr} className="bg-white rounded-3xl border border-brand-gold/20 shadow-sm overflow-hidden">
                             <div className="bg-brand-gold/10 px-6 py-4 border-b border-brand-gold/20 flex justify-between items-center text-brand-charcoal">
                                 <h4 className="font-bold uppercase tracking-widest font-serif">Day {dayStr} Overview</h4>
-                                <span className="text-xs font-semibold bg-white px-3 py-1 rounded-full border border-brand-gold/30">
-                                    {blocks.length} Blocks Managed
-                                </span>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs font-semibold bg-white px-3 py-1 rounded-full border border-brand-gold/30">
+                                        {blocks.length} Blocks Managed
+                                    </span>
+                                    <button onClick={() => removeDay(dayStr)} className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1 transition-colors">
+                                        <Trash2 size={14} /> Remove Day
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="divide-y divide-neutral-100">
@@ -248,13 +334,18 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                             </div>
                                         </div>
 
-                                        <div className="md:col-span-4">
-                                            <input value={block.name} onChange={e => updateBlock(block.id, 'name', e.target.value)} className="w-full text-sm font-semibold text-neutral-800 bg-transparent py-1 border-b border-transparent focus:border-brand-gold focus:outline-none" />
-                                            {block.locationName && (
-                                                <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
-                                                    <MapPin size={10} /> {block.locationName}
-                                                </p>
-                                            )}
+                                        <div className="md:col-span-4 flex items-start gap-2">
+                                            <div className="flex-1">
+                                                <input value={block.name} onChange={e => updateBlock(block.id, 'name', e.target.value)} className="w-full text-sm font-semibold text-neutral-800 bg-transparent py-1 border-b border-transparent focus:border-brand-gold focus:outline-none" />
+                                                {block.locationName && (
+                                                    <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
+                                                        <MapPin size={10} /> {block.locationName}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button onClick={() => removeBlock(block.id, block.dayNumber)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity mt-1" title="Delete Activity">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
 
                                         <div className="md:col-span-5 flex flex-col gap-2 opacity-80 group-hover:opacity-100 transition-opacity py-1">

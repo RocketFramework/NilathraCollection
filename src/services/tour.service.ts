@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { CreateTourDTO, UpdateTourDTO, AddActivityDTO } from '../dtos/tour.dto';
+import { TripData } from '@/app/admin/(authenticated)/planner/types';
+import { createClient as createSupabaseClient } from '@/utils/supabase/client';
+import { createAdminClient } from '@/utils/supabase/admin';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createSupabaseClient();
 
 export class TourService {
     static async createTour(dto: CreateTourDTO) {
@@ -52,5 +53,291 @@ export class TourService {
 
         if (error) throw error;
         return data;
+    }
+
+    /**
+     * Finds a request and generates a Tour from it if it doesn't already exist.
+     * Returns the Tour ID to be used by the Planner.
+     */
+    static async createTourFromRequest(requestId: string): Promise<string> {
+        const supabaseAdmin = createAdminClient();
+
+        // 1. Check if a tour already exists for this request
+        const { data: existingTour, error: checkError } = await supabaseAdmin
+            .from('tours')
+            .select('id')
+            .eq('request_id', requestId)
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (existingTour) return existingTour.id;
+
+        // 2. Fetch the request details
+        const { data: requestMsg, error: reqError } = await supabaseAdmin
+            .from('requests')
+            .select(`
+                *,
+                details:request_details(*)
+            `)
+            .eq('id', requestId)
+            .single();
+
+        if (reqError) throw reqError;
+        if (!requestMsg) throw new Error("Request not found");
+
+        const details = requestMsg.details?.[0] || {};
+
+        // 3. Create the Tour
+        const { data: newTour, error: insertError } = await supabaseAdmin
+            .from('tours')
+            .insert([{
+                request_id: requestId,
+                tourist_id: requestMsg.tourist_id || null, // Will need non-null tourist_id in future based on schema, if anonymous request this might fail unless triggered
+                agent_id: requestMsg.admin_assigned_to || null,
+                title: details.package_name || `Custom Tour - ${requestMsg.email || 'Client'}`,
+                status: 'Draft',
+                start_date: details.start_date || null,
+                end_date: details.end_date || null,
+            }])
+            .select('id')
+            .single();
+
+        if (insertError) throw insertError;
+
+        // 3.5 Scaffold Tour Itineraries based on requested duration
+        const duration = details.nights || 1;
+        let currentDate = details.start_date ? new Date(details.start_date) : null;
+
+        for (let i = 1; i <= duration; i++) {
+            let dayDate = null;
+            if (currentDate) {
+                const d = new Date(currentDate);
+                d.setDate(d.getDate() + (i - 1));
+                dayDate = d.toISOString().split('T')[0];
+            }
+
+            const { data: itin, error: itinErr } = await supabaseAdmin
+                .from('tour_itineraries')
+                .insert([{
+                    tour_id: newTour.id,
+                    day_number: i,
+                    date: dayDate,
+                    title: `Day ${i}`
+                }])
+                .select('id')
+                .single();
+
+            if (!itinErr && itin) {
+                // Insert an empty daily_activities record to scaffold the planner experience
+                await supabaseAdmin.from('daily_activities').insert([{
+                    itinerary_id: itin.id,
+                    title: 'New Activity',
+                    time_start: '09:00:00',
+                    time_end: '10:00:00'
+                }]);
+            } else if (itinErr) {
+                console.error(`Failed to scaffold itinerary day ${i}:`, itinErr);
+            }
+        }
+
+        // 4. Update request status to reflect it's now being planned
+        await supabaseAdmin.from('requests').update({ status: 'Assigned' }).eq('id', requestId);
+
+        return newTour.id;
+    }
+
+    /**
+     * Fetches a Tour and reinstates the TripData JSON blob if it exists.
+     * If navigating to a fresh tour, it seeds initial data from the request.
+     */
+    static async getTourData(tourId: string): Promise<{ tripData: Partial<TripData>, tourMsg: any }> {
+        const supabaseAdmin = createAdminClient();
+        const { data: tourMsg, error } = await supabaseAdmin
+            .from('tours')
+            .select(`
+                *,
+                request:requests(
+                    email, 
+                    details:request_details(*)
+                ),
+                tourist:users!tours_tourist_id_fkey(
+                    email,
+                    tourist_profile:tourist_profiles(first_name, last_name, phone)
+                )
+            `)
+            .eq('id', tourId)
+            .single();
+
+        if (error) throw error;
+
+        const plannerData = tourMsg.planner_data;
+
+        // If the planner data has already been saved before, return it perfectly mapped
+        if (plannerData && Object.keys(plannerData).length > 0) {
+            return { tripData: plannerData as TripData, tourMsg };
+        }
+
+        // Otherwise seed it from the request_details
+        const reqInfo = tourMsg.request;
+        const details = reqInfo?.details?.[0] || {};
+        const tourist = tourMsg.tourist;
+        const touristProfile = tourist?.tourist_profile?.[0] || {};
+
+        const seedData: Partial<TripData> = {
+            id: tourId,
+            clientName: touristProfile.first_name ? `${touristProfile.first_name} ${touristProfile.last_name}` : (reqInfo?.email || 'New Client Inquiry'),
+            clientEmail: reqInfo?.email || tourist?.email || '',
+            clientPhone: touristProfile.phone || '',
+            status: tourMsg.status as any,
+            profile: {
+                adults: details.adults || 2,
+                children: details.children || 0,
+                infants: 0,
+                arrivalDate: details.start_date || '',
+                departureDate: details.end_date || '',
+                durationDays: details.nights || 0,
+                budgetTotal: details.estimated_price || 0,
+                budgetPerPerson: details.estimated_price && details.adults ? details.estimated_price / details.adults : 0,
+                travelStyle: details.budget_tier ? 'Premium' : 'Luxury',
+                specialConditions: {
+                    dietary: details.special_requirements ? 'See internal notes' : '',
+                    medical: '',
+                    accessibility: '',
+                    language: 'English',
+                    occasion: ''
+                }
+            },
+            serviceScopes: [],
+            flights: [], accommodations: [], transports: [], activities: [], itinerary: [],
+            financials: {
+                costs: { flights: 0, hotels: 0, transport: 0, activities: 0, guide: 0, misc: 0, commission: 0, tax: 0 },
+                sellingPrice: details.estimated_price || 0
+            }
+        };
+
+        return { tripData: seedData, tourMsg };
+    }
+
+    /**
+     * Saves the robust TripData UI state perfectly into a JSONB column to prevent data loss.
+     * Also systematically maps `tripData.itinerary` to `tour_itineraries` and `daily_activities` 
+     * table rows for reporting / operations!
+     */
+    static async saveTour(tourId: string, tripData: TripData) {
+        const supabaseAdmin = createAdminClient();
+
+        // 1. SAVE RAW JSONB STATE & BASIC RELATIONAL TOUR INFO
+        const { error: tourErr } = await supabaseAdmin
+            .from('tours')
+            .update({
+                planner_data: tripData,
+                title: tripData.clientName,
+                status: tripData.status,
+                start_date: tripData.profile?.arrivalDate || null,
+                end_date: tripData.profile?.departureDate || null,
+            })
+            .eq('id', tourId);
+
+        if (tourErr) throw tourErr;
+
+        // 2. SYNC ITINERARY TO RELATIONAL TABLES
+        // Delete old itineraries (Cascade deletes daily_activities)
+        await supabaseAdmin.from('tour_itineraries').delete().eq('tour_id', tourId);
+
+        // Map TripData.itinerary into days
+        if (!tripData.itinerary || tripData.itinerary.length === 0) return;
+
+        // Group the flat itinerary list by dayNumber
+        const blocksByDay: Record<number, typeof tripData.itinerary> = {};
+        for (const block of tripData.itinerary) {
+            if (!blocksByDay[block.dayNumber]) blocksByDay[block.dayNumber] = [];
+            blocksByDay[block.dayNumber].push(block);
+        }
+
+        const days = Object.keys(blocksByDay).map(Number).sort((a, b) => a - b);
+
+        for (const day of days) {
+
+            // Generate an approximate date for this itinerary day based on profile arrival
+            let dayDate = null;
+            if (tripData.profile?.arrivalDate) {
+                const dateObj = new Date(tripData.profile.arrivalDate);
+                dateObj.setDate(dateObj.getDate() + (day - 1));
+                dayDate = dateObj.toISOString().split('T')[0];
+            }
+
+            // Look up the matching hotel for this day (nightIndex === day)
+            const matchingHotel = tripData.accommodations?.find(h => h.nightIndex === day);
+            let dbHotelId = matchingHotel?.hotelId || null;
+
+            if (!dbHotelId && matchingHotel && matchingHotel.hotelName) {
+                // Try to resolve the text-based hotelName to a real UUID in the 'hotels' table as fallback
+                const { data: hotelMatches } = await supabaseAdmin
+                    .from('hotels')
+                    .select('id')
+                    .ilike('name', matchingHotel.hotelName)
+                    .limit(1);
+
+                if (hotelMatches && hotelMatches.length > 0) {
+                    dbHotelId = hotelMatches[0].id;
+                }
+            }
+
+            // A) Create 'tour_itineraries' header for the day
+            const { data: dbItin, error: itinErr } = await supabaseAdmin
+                .from('tour_itineraries')
+                .insert([{
+                    tour_id: tourId,
+                    day_number: day,
+                    date: dayDate,
+                    title: `Day ${day}`,
+                    hotel_id: dbHotelId
+                }])
+                .select('id')
+                .single();
+
+            if (itinErr || !dbItin) {
+                console.error("Failed to map day", day, itinErr);
+                continue;
+            }
+
+            const blocks = blocksByDay[day];
+
+            // B) Insert all blocks for this day into 'daily_activities'
+            // Attempt to resolve supplier names to actual vendor UUIDs
+            const activitiesToInsert = [];
+
+            for (const b of blocks) {
+                let vendorId = null;
+                if (b.linkedSupplierId && typeof b.linkedSupplierId === 'string' && !b.linkedSupplierId.includes('-')) {
+                    // Looks like a name, not a UUID, let's try to grab the real UUID
+                    const { data: vendorMatches } = await supabaseAdmin
+                        .from('vendors')
+                        .select('id')
+                        .ilike('name', b.linkedSupplierId)
+                        .limit(1);
+
+                    if (vendorMatches && vendorMatches.length > 0) {
+                        vendorId = vendorMatches[0].id;
+                    }
+                } else if (b.linkedSupplierId && typeof b.linkedSupplierId === 'string') {
+                    vendorId = b.linkedSupplierId; // Trust it's a UUID
+                }
+
+                activitiesToInsert.push({
+                    itinerary_id: dbItin.id,
+                    title: b.name,
+                    description: b.clientVisibleNotes || b.internalNotes || '',
+                    time_start: b.startTime,
+                    time_end: b.endTime,
+                    vendor_id: vendorId // Map to the resolved UUID
+                });
+            }
+
+            if (activitiesToInsert.length > 0) {
+                const { error: actErr } = await supabaseAdmin.from('daily_activities').insert(activitiesToInsert);
+                if (actErr) console.error("Failed to insert activities for day", day, actErr);
+            }
+        }
     }
 }

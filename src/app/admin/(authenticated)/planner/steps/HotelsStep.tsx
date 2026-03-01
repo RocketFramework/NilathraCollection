@@ -1,9 +1,26 @@
 "use client";
 
 import { TripData, AccommodationBooking } from "../types";
-import { BedDouble, Plus, Trash2, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
+import { BedDouble, Plus, Trash2, CheckCircle2, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getHotelsListAction } from "@/actions/admin.actions";
 
 export function HotelsStep({ tripData, updateHotels }: { tripData: TripData, updateHotels: (h: AccommodationBooking[]) => void }) {
+
+    const [availableHotels, setAvailableHotels] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHotels = async () => {
+            setIsLoading(true);
+            const res = await getHotelsListAction();
+            if (res.success && res.hotels) {
+                setAvailableHotels(res.hotels);
+            }
+            setIsLoading(false);
+        };
+        fetchHotels();
+    }, []);
 
     if (!tripData.serviceScopes.includes('Book Accommodation')) {
         return (
@@ -30,7 +47,8 @@ export function HotelsStep({ tripData, updateHotels }: { tripData: TripData, upd
             email: '',
             rateCardUrl: '',
             roomType: 'Standard Double',
-            numberOfRooms: 1,
+            numberOfRooms: Math.ceil((tripData.profile.adults + tripData.profile.children) / 2) || 1,
+            numberOfGuests: tripData.profile.adults + tripData.profile.children + tripData.profile.infants,
             pricePerNight: 100,
             mealPlan: 'BB',
             status: 'Tentative',
@@ -50,7 +68,21 @@ export function HotelsStep({ tripData, updateHotels }: { tripData: TripData, upd
     const updateHotelField = (id: string, field: keyof AccommodationBooking, value: any) => {
         const updated = accommodations.map(h => {
             if (h.id === id) {
-                return { ...h, [field]: value };
+                const newData = { ...h, [field]: value };
+
+                // If they changed the hotelName via dropdown or typing, try to find a match to auto-fill ID and Address
+                if (field === 'hotelName') {
+                    const match = availableHotels.find(db => db.name === value);
+                    if (match) {
+                        newData.hotelId = match.id;
+                        if (!h.address) newData.address = match.location || '';
+                    } else {
+                        // User typed something custom that doesn't match the DB
+                        newData.hotelId = undefined;
+                    }
+                }
+
+                return newData;
             }
             return h;
         });
@@ -114,9 +146,27 @@ export function HotelsStep({ tripData, updateHotels }: { tripData: TripData, upd
 
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-[1fr_100px] gap-2">
-                                            <div>
-                                                <label className="text-xs text-neutral-500 mb-1 block">Property Name / Resort</label>
-                                                <input type="text" value={hotel.hotelName} onChange={e => updateHotelField(hotel.id, 'hotelName', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-neutral-50 focus:bg-white border-neutral-300 font-semibold" placeholder="Ex: Heritance Kandalama" />
+                                            <div className="relative">
+                                                <label className="text-xs text-neutral-500 mb-1 flex items-center gap-2">
+                                                    Property Name / Resort
+                                                    {isLoading && <Loader2 size={10} className="animate-spin text-brand-gold" />}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    list={`hotels-list-${hotel.id}`}
+                                                    value={hotel.hotelName}
+                                                    onChange={e => updateHotelField(hotel.id, 'hotelName', e.target.value)}
+                                                    className="w-full px-3 py-2 border rounded-lg text-sm bg-neutral-50 focus:bg-white border-brand-gold/50 font-semibold focus:ring-1 focus:ring-brand-gold"
+                                                    placeholder="Search DB or type custom name..."
+                                                />
+                                                <datalist id={`hotels-list-${hotel.id}`}>
+                                                    {availableHotels.map(dbH => (
+                                                        <option key={dbH.id} value={dbH.name}>{dbH.location || 'No Location'}</option>
+                                                    ))}
+                                                </datalist>
+                                                {hotel.hotelId && (
+                                                    <span className="absolute right-2 top-8 text-[10px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 border border-green-200 rounded">Linked</span>
+                                                )}
                                             </div>
                                             <div>
                                                 <label className="text-xs text-neutral-500 mb-1 block">Hotel Class</label>
@@ -165,6 +215,10 @@ export function HotelsStep({ tripData, updateHotels }: { tripData: TripData, upd
                                         <div>
                                             <label className="text-xs font-bold text-neutral-600 block mb-1">Total Rooms</label>
                                             <input type="number" min="1" value={hotel.numberOfRooms} onChange={e => updateHotelField(hotel.id, 'numberOfRooms', Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg text-sm bg-neutral-50 font-bold text-center border-neutral-300 focus:bg-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-neutral-600 block mb-1">Total Guests</label>
+                                            <input type="number" min="1" value={hotel.numberOfGuests || 1} onChange={e => updateHotelField(hotel.id, 'numberOfGuests', Number(e.target.value))} className="w-full px-3 py-2 border rounded-lg text-sm bg-neutral-50 font-bold text-center border-neutral-300 focus:bg-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold" />
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-neutral-600 block mb-1">Rate Per Night ($)</label>

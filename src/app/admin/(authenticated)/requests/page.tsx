@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Package, MapPin, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { UserService } from "@/services/user.service";
@@ -8,6 +9,7 @@ import { UserService } from "@/services/user.service";
 export default function AdminRequests() {
     // In a real app, retrieve user role securely server-side or via context. Using state for mock implementation.
     const [userRole, setUserRole] = useState<'admin' | 'agent' | null>('admin');
+    const router = useRouter();
 
     const [requests, setRequests] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -291,54 +293,70 @@ export default function AdminRequests() {
                                     Clear Filters
                                 </button>
                             </div>
-                        ) : requests.map(req => (
-                            <div key={req.id} className="p-6 hover:bg-neutral-50 flex flex-col md:flex-row gap-4 items-center justify-between transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-brand-charcoal text-white flex items-center justify-center font-bold text-lg">
-                                        {req.tourist ? req.tourist.charAt(0).toUpperCase() : '?'}
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-brand-charcoal flex items-center gap-2">
-                                            {req.tourist}
-                                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${req.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : req.status === 'Assigned' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                                                {req.status}
-                                            </span>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-neutral-100">
+                                    <thead className="bg-neutral-50">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                                                Request Details
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                                                Tourist
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
                                             {userRole === 'admin' && (
-                                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${req.assignedTo === 'Unassigned' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
-                                                    {req.assignedTo}
-                                                </span>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                                                    Assigned To
+                                                </th>
                                             )}
-                                        </h4>
-                                        <div className="text-sm text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                                            <span className="flex items-center gap-1"><MapPin size={12} /> {req.type}</span>
-                                            {req.email && <span>&bull; {req.email}</span>}
-                                            <span>&bull; {req.nights} Nights</span>
-                                            <span>&bull; Submitted: {req.date}</span>
-                                        </div>
-                                        {req.destinations.length > 0 && (
-                                            <div className="mt-2 flex gap-1 flex-wrap">
-                                                {req.destinations.map((dest: string, i: number) => (
-                                                    <span key={i} className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded">
-                                                        {dest}
+                                            <th scope="col" className="relative px-6 py-3">
+                                                <span className="sr-only">View</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-neutral-100">
+                                        {requests.map((request) => (
+                                            <tr
+                                                key={request.id}
+                                                className="border-b border-[#E5E7EB] hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                                onClick={() => router.push(`/admin/requests/${request.id}`)}
+                                            >
+                                                <td className="p-4 text-sm font-medium text-brand-charcoal">
+                                                    {request.details?.package_name || 'Custom Trip'}
+                                                    <span className="block text-xs font-normal text-neutral-500 mt-0.5">
+                                                        {request.details?.destinations?.length > 0 ? request.details.destinations.join(', ') : 'Destinations TBD'}
                                                     </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
-                                    {userRole === 'admin' && req.status === 'Pending' && (
-                                        <button className="flex-1 md:flex-none text-xs font-bold uppercase tracking-wider bg-brand-gold text-white px-4 py-2 rounded-lg hover:bg-[#B3932F] transition-colors shadow-sm">
-                                            Assign
-                                        </button>
-                                    )}
-                                    <Link href={`/admin/planner?reqId=${req.id}`} className="flex-1 md:flex-none text-xs font-bold uppercase tracking-wider bg-brand-green text-white px-4 py-2 rounded-lg hover:bg-brand-charcoal transition-colors text-center shadow-md">
-                                        View Details
-                                    </Link>
-                                </div>
+                                                </td>
+                                                <td className="p-4 text-sm text-neutral-600">
+                                                    {request.tourist}
+                                                    <span className="block text-xs text-neutral-500 mt-0.5">{request.email}</span>
+                                                </td>
+                                                <td className="p-4 text-sm">
+                                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${request.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : request.status === 'Assigned' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                                        {request.status}
+                                                    </span>
+                                                </td>
+                                                {userRole === 'admin' && (
+                                                    <td className="p-4 text-sm">
+                                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${request.assignedTo === 'Unassigned' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
+                                                            {request.assignedTo}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                <td className="p-4 text-sm text-right">
+                                                    <button className="text-brand-gold hover:text-[#B3932F] font-bold text-xs uppercase tracking-wider">
+                                                        View Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        ))}
+                        )}
                     </div>
 
                     {/* Pagination Controls */}

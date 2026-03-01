@@ -1,3 +1,11 @@
+export interface CreateAgentDTO {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    password?: string; // Only for initial creation
+}
+
 export interface UserProfileDTO {
     id: string; // UUID
     email?: string;

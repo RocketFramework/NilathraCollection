@@ -162,6 +162,7 @@ CREATE TABLE tours (
     status VARCHAR(50) DEFAULT 'Pending', -- Mirrors request usually
     start_date DATE,
     end_date DATE,
+    planner_data JSONB DEFAULT '{}'::jsonb, -- NEW: Stores full react state for builder
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

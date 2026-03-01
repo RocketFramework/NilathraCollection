@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Users, Settings, LogOut, Package, Compass } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, Package, Compass, MapPin, Database, UserPlus } from "lucide-react";
 import { logoutAction } from "../../actions/auth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -17,17 +17,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         <LayoutDashboard size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
                         <span className="font-medium tracking-wide">Dashboard</span>
                     </Link>
-                    <Link href="/admin/packages" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
-                        <Package size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
-                        <span className="font-medium tracking-wide">Packages</span>
+                    <Link href="/admin/requests" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
+                        <MapPin size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
+                        <span className="font-medium tracking-wide">Requests</span>
                     </Link>
                     <Link href="/admin/planner" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
                         <Compass size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
                         <span className="font-medium tracking-wide">Trip Planner</span>
                     </Link>
+                    <Link href="/admin/packages" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
+                        <Package size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
+                        <span className="font-medium tracking-wide">Packages</span>
+                    </Link>
                     <Link href="/admin/users" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
                         <Users size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
                         <span className="font-medium tracking-wide">Users</span>
+                    </Link>
+                    <Link href="/admin/master-data" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
+                        <Database size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
+                        <span className="font-medium tracking-wide">Master Data</span>
+                    </Link>
+                    <Link href="/admin/users/create-agent" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
+                        <UserPlus size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />
+                        <span className="font-medium tracking-wide">Create Agent</span>
                     </Link>
                     <Link href="/admin/settings" className="flex items-center gap-4 px-6 py-3 text-[#4B5563] hover:bg-[#F5F3EF] hover:text-[#2B2B2B] transition-colors rounded-r-full mr-4 group">
                         <Settings size={20} className="text-[#6B7280] group-hover:text-[#D4AF37] transition-colors" />

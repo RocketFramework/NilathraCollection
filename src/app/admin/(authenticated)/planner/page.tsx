@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { getTourDataAction, saveTourAction } from "@/actions/admin.actions";
 import { TripData } from "./types";
 import { ScopeAndProfileStep } from "./steps/ScopeAndProfileStep";
 import { FlightsStep } from "./steps/FlightsStep";
@@ -10,8 +12,7 @@ import { TransportStep } from "./steps/TransportStep";
 import { ItineraryBuilder } from "./steps/ItineraryBuilder";
 import { FinancialSummaryPanel } from "./components/FinancialSummaryPanel";
 import { OperationalReadiness } from "./components/OperationalReadiness";
-import { Save, FileCheck, CheckSquare, Users, Plane, Compass, BedDouble, CarFront, CalendarDays, Calculator, Activity } from "lucide-react";
-
+import { Save, FileCheck, CheckSquare, Users, Plane, Compass, BedDouble, CarFront, CalendarDays, Calculator, Activity, Loader2 } from "lucide-react";
 const initialData: TripData = {
     clientName: 'New Client Inquiry',
     clientEmail: '',
@@ -41,16 +42,7 @@ const initialData: TripData = {
     activities: [],
     itinerary: [],
     financials: {
-        costs: {
-            flights: 0,
-            hotels: 0,
-            transport: 0,
-            activities: 0,
-            guide: 0,
-            misc: 0,
-            commission: 0,
-            tax: 0
-        },
+        costs: { flights: 0, hotels: 0, transport: 0, activities: 0, guide: 0, misc: 0, commission: 0, tax: 0 },
         sellingPrice: 0
     }
 };
@@ -66,19 +58,66 @@ const STEPS = [
     { id: 'finance', label: 'Financials', icon: Calculator }
 ];
 
-export default function PlannerWizard() {
+function PlannerWorkspace() {
+    const searchParams = useSearchParams();
+    const tourId = searchParams.get('tourId');
 
     const [activeTab, setActiveTab] = useState('summary');
     const [tripData, setTripData] = useState<TripData>(initialData);
+    const [isLoading, setIsLoading] = useState(!!tourId);
     const [isSaving, setIsSaving] = useState(false);
 
+    useEffect(() => {
+        const loadTour = async () => {
+            if (!tourId) return;
+            setIsLoading(true);
+            try {
+                const res = await getTourDataAction(tourId);
+                if (res.success && res.data) {
+                    setTripData(res.data.tripData as TripData);
+                } else {
+                    throw new Error(res.error || "Failed to load");
+                }
+            } catch (error) {
+                console.error("Failed to load tour data:", error);
+                alert("Could not load tour data. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadTour();
+    }, [tourId]);
+
     const handleSave = async () => {
+        if (!tourId) {
+            alert("This planner is not attached to a definitive Tour yet.");
+            return;
+        }
         setIsSaving(true);
-        // DB Mock logic / replace with Supabase insert in future
-        await new Promise(r => setTimeout(r, 800));
-        setIsSaving(false);
-        alert("Workflow state saved to database successfully.");
+        try {
+            const res = await saveTourAction(tourId, tripData);
+            if (res.success) {
+                alert("Workflow state saved to database successfully.");
+            } else {
+                throw new Error(res.error || "Failed to save");
+            }
+        } catch (error) {
+            console.error("Failed to save tour", error);
+            alert("Error saving tour. Check console for details.");
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-[#F5F3EF] items-center justify-center">
+                <Loader2 className="animate-spin text-brand-gold w-10 h-10 mb-4" />
+                <p className="text-neutral-500 font-medium">Loading Planner Workspace...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-[#F5F3EF]">
@@ -187,5 +226,18 @@ export default function PlannerWizard() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function PlannerWizard() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-[#F5F3EF] items-center justify-center">
+                <Loader2 className="animate-spin text-brand-gold w-10 h-10 mb-4" />
+                <p className="text-neutral-500 font-medium">Initializing Planner Workspace...</p>
+            </div>
+        }>
+            <PlannerWorkspace />
+        </Suspense>
     );
 }

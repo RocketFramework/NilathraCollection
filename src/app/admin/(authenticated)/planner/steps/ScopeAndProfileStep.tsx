@@ -35,7 +35,7 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
             updates.flights = [{
                 id: crypto.randomUUID(),
                 numberOfSeats: profile.adults + profile.children,
-                departureCountry: '',
+                departureCountry: profile.departureCountry || '',
                 preferredAirlines: '',
                 travelClass: profile.travelStyle === 'Ultra Luxury VIP' ? 'First Class' : profile.travelStyle === 'Luxury' ? 'Business' : profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
                 mealPreference: 'Standard',
@@ -146,9 +146,13 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
                             <label className="text-xs text-neutral-500 mb-1 block">Phone Number</label>
                             <input type="tel" value={tripData.clientPhone || ''} onChange={e => updateData({ clientPhone: e.target.value })} className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:ring-1 focus:ring-brand-gold" placeholder="+1 234 567 890" />
                         </div>
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-3">
                             <label className="text-xs text-neutral-500 mb-1 block">Residential / Billing Address</label>
                             <input type="text" value={tripData.clientAddress || ''} onChange={e => updateData({ clientAddress: e.target.value })} className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:ring-1 focus:ring-brand-gold" placeholder="123 Example Street, City, Country" />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-500 mb-1 block">Departure Country</label>
+                            <input type="text" value={profile.departureCountry || ''} onChange={e => updateProfile('departureCountry', e.target.value)} className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:ring-1 focus:ring-brand-gold" placeholder="Ex: United Kingdom" />
                         </div>
                     </div>
                 </div>

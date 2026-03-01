@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { UserProfileDTO } from '../dtos/user-vendor.dto';
+import { UserProfileDTO, CreateAgentDTO } from '../dtos/user-vendor.dto';
+import { createAdminClient } from '../utils/supabase/admin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -60,8 +61,21 @@ export class AgentService {
 }
 
 export class AdminService {
+    static async getAllAgents() {
+        const supabaseAdmin = createAdminClient();
+        const { data, error } = await supabaseAdmin
+            .from('agent_profiles')
+            .select('id, first_name, last_name, is_active')
+            .eq('is_active', true)
+            .order('first_name', { ascending: true });
+
+        if (error) throw error;
+        return data;
+    }
+
     static async assignAgentToRequest(requestId: string, agentId: string) {
-        const { data, error } = await supabase
+        const supabaseAdmin = createAdminClient();
+        const { data, error } = await supabaseAdmin
             .from('requests')
             .update({ admin_assigned_to: agentId, status: 'Assigned' })
             .eq('id', requestId)
@@ -72,5 +86,59 @@ export class AdminService {
         return data;
     }
 
-    // Other admin override methods...
+    static async createAgent(dto: CreateAgentDTO) {
+        if (!dto.first_name || !dto.last_name || !dto.email || !dto.password) {
+            throw new Error("First Name, Last Name, Email, and Password are required.");
+        }
+
+        const supabaseAdmin = createAdminClient();
+
+        // 1. Create user in Supabase Auth via Admin API
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: dto.email,
+            password: dto.password,
+            email_confirm: false,
+            user_metadata: {
+                first_name: dto.first_name,
+                last_name: dto.last_name,
+                phone: dto.phone || ''
+            }
+        });
+
+        if (authError) throw new Error(`Auth creation failed: ${authError.message}`);
+        if (!authUser.user) throw new Error("User creation failed, no user returned.");
+
+        const newUserId = authUser.user.id;
+
+        // 2. Fetch the 'agent' role ID
+        const { data: roleData, error: roleError } = await supabaseAdmin
+            .from("roles")
+            .select("id")
+            .eq("name", "agent")
+            .single();
+
+        if (roleError || !roleData) throw new Error("Failed to locate agent role. Did you create it?");
+
+        // 3. Assign User Role
+        const { error: assignError } = await supabaseAdmin
+            .from("user_roles")
+            .insert([{ user_id: newUserId, role_id: roleData.id }]);
+
+        if (assignError) throw new Error("Agent account created, but role assignment failed.");
+
+        // 4. Create Agent Profile
+        const { error: profileError } = await supabaseAdmin
+            .from("agent_profiles")
+            .insert([{
+                id: newUserId,
+                first_name: dto.first_name,
+                last_name: dto.last_name,
+                phone: dto.phone || null,
+                is_active: true
+            }]);
+
+        if (profileError) throw new Error("Agent role assigned, but profile creation failed.");
+
+        return { id: newUserId, ...dto };
+    }
 }

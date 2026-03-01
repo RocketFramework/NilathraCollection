@@ -21,7 +21,7 @@ export function FlightsStep({ tripData, updateFlights }: { tripData: TripData, u
         const newFlight: FlightBooking = {
             id: crypto.randomUUID(),
             numberOfSeats: tripData.profile.adults + tripData.profile.children,
-            departureCountry: '',
+            departureCountry: tripData.profile.departureCountry || '',
             preferredAirlines: '',
             travelClass: tripData.profile.travelStyle === 'Ultra Luxury VIP' ? 'First Class' : tripData.profile.travelStyle === 'Luxury' ? 'Business' : tripData.profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
             mealPreference: 'Standard',
