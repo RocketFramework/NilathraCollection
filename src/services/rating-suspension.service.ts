@@ -53,7 +53,7 @@ export class SuspensionService {
         let tableName = '';
         switch (rec.vendor_type) {
             case 'hotel': tableName = 'hotels'; break;
-            case 'activity_vendor': tableName = 'activity_vendors'; break;
+            case 'activity_vendor': tableName = 'vendors'; break;
             case 'transport_provider': tableName = 'transport_providers'; break;
             case 'driver': tableName = 'drivers'; break;
             case 'guide': tableName = 'tour_guides'; break;
