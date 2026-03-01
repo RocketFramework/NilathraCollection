@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Edit2, Trash2, Building2, Car, Compass, UserCircle } from "lucide-react";
+import { HotelService, Hotel } from "@/services/hotel.service";
+import HotelFormModal from "./components/HotelFormModal";
 
 const DATABASES = [
     { id: 'hotels', label: 'Hotels & Resorts', icon: Building2 },
@@ -14,12 +16,61 @@ export default function MasterDataPage() {
     const [activeTab, setActiveTab] = useState(DATABASES[0].id);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Mock data
-    const mockData = [
-        { id: '1', name: 'The Grand Colombo', type: 'Luxury Hotel', location: 'Colombo', status: 'Active' },
-        { id: '2', name: 'Kandy Heritage', type: 'Boutique Resort', location: 'Kandy', status: 'Suspended' },
-        { id: '3', name: '98 Acres Resort', type: 'Eco Lodge', location: 'Ella', status: 'Active' },
-    ];
+    const [hotels, setHotels] = useState<Hotel[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+
+    useEffect(() => {
+        if (activeTab === 'hotels') {
+            loadHotels();
+        }
+    }, [activeTab]);
+
+    const loadHotels = async () => {
+        setLoading(true);
+        try {
+            const data = await HotelService.getHotels();
+            setHotels(data);
+        } catch (error) {
+            console.error("Failed to load hotels:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAdd = () => {
+        setSelectedHotel(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = async (hotelId: string) => {
+        try {
+            const fullHotel = await HotelService.getHotel(hotelId);
+            setSelectedHotel(fullHotel);
+            setIsModalOpen(true);
+        } catch (error) {
+            console.error("Failed to fetch full hotel details", error);
+        }
+    };
+
+    const handleDelete = async (hotelId: string) => {
+        if (confirm("Are you sure you want to delete this hotel?")) {
+            try {
+                await HotelService.deleteHotel(hotelId);
+                loadHotels();
+            } catch (error) {
+                console.error("Failed to delete hotel:", error);
+            }
+        }
+    };
+
+    const filteredHotels = hotels.filter(h =>
+        h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (h.location && h.location.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
     return (
         <div className="max-w-7xl mx-auto p-10 animate-in fade-in duration-500">
@@ -28,7 +79,7 @@ export default function MasterDataPage() {
                     <h1 className="text-3xl font-bold font-playfair text-[#2B2B2B]">Master Database</h1>
                     <p className="text-[#6B7280] mt-1">Manage global records for vendors, partners, and user accounts.</p>
                 </div>
-                <button className="bg-brand-green hover:bg-brand-charcoal text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-sm text-sm">
+                <button onClick={handleAdd} className="bg-brand-green hover:bg-brand-charcoal text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-sm text-sm">
                     <Plus size={18} /> Add New Record
                 </button>
             </div>
@@ -78,32 +129,55 @@ export default function MasterDataPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 text-sm text-brand-charcoal font-medium">
-                            {mockData.map(row => (
-                                <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
-                                    <td className="p-4 pl-6 font-bold">{row.name}</td>
-                                    <td className="p-4 text-neutral-500">{row.type}</td>
-                                    <td className="p-4 text-neutral-500">{row.location}</td>
-                                    <td className="p-4 text-center">
-                                        <span className={`inline-block px-3 py-1 text-[10px] uppercase font-bold tracking-widest rounded-full ${row.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {row.status}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 pr-6 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button className="p-2 text-neutral-400 hover:text-brand-green hover:bg-brand-green/10 rounded-lg transition-colors">
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
+                            {activeTab === 'hotels' ? (
+                                loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td>
+                                    </tr>
+                                ) : filteredHotels.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td>
+                                    </tr>
+                                ) : (
+                                    filteredHotels.map(row => (
+                                        <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
+                                            <td className="p-4 pl-6 font-bold">{row.name}</td>
+                                            <td className="p-4 text-neutral-500">{row.hotel_class || 'Not Specified'}</td>
+                                            <td className="p-4 text-neutral-500">{row.location || 'Not Specified'}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`inline-block px-3 py-1 text-[10px] uppercase font-bold tracking-widest rounded-full ${!row.is_suspended ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                    {!row.is_suspended ? 'Active' : 'Suspended'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 pr-6 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button onClick={() => row.id && handleEdit(row.id)} className="p-2 text-neutral-400 hover:text-brand-green hover:bg-brand-green/10 rounded-lg transition-colors">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button onClick={() => row.id && handleDelete(row.id)} className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">This section is not implemented yet.</td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            <HotelFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                hotel={selectedHotel}
+                onSave={loadHotels}
+            />
         </div>
     );
 }

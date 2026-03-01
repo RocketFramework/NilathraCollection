@@ -73,7 +73,58 @@ CREATE TABLE hotels (
     name VARCHAR(255) NOT NULL,
     location VARCHAR(255),
     description TEXT,
+    sales_agent_name VARCHAR(255),
+    sales_agent_contact VARCHAR(255),
+    reservation_agent_name VARCHAR(255),
+    reservation_agent_contact VARCHAR(255),
+    gm_name VARCHAR(255),
+    gm_contact VARCHAR(255),
+    hotel_class VARCHAR(50),
+    number_of_rooms INTEGER DEFAULT 0,
+    disable_support VARCHAR(50) CHECK (disable_support IN ('none', 'some areas', 'full access')),
+    outdoor_pool BOOLEAN DEFAULT FALSE,
+    wellness BOOLEAN DEFAULT FALSE,
+    business_facility BOOLEAN DEFAULT FALSE,
+    parking BOOLEAN DEFAULT FALSE,
+    internet BOOLEAN DEFAULT FALSE,
+    airport_shuttle BOOLEAN DEFAULT FALSE,
+    free_cancellation_before DATE,
+    admin_approved BOOLEAN DEFAULT FALSE,
+    vat_registered BOOLEAN DEFAULT FALSE,
     is_suspended BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE recreations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE hotel_recreations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hotel_id UUID REFERENCES hotels(id) ON DELETE CASCADE NOT NULL,
+    recreation_id UUID REFERENCES recreations(id) ON DELETE CASCADE NOT NULL,
+    additional_charge BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(hotel_id, recreation_id)
+);
+
+CREATE TABLE hotel_rooms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hotel_id UUID REFERENCES hotels(id) ON DELETE CASCADE NOT NULL,
+    room_name VARCHAR(255) NOT NULL,
+    max_guests INTEGER DEFAULT 1,
+    breakfast_included BOOLEAN DEFAULT FALSE,
+    summer_start_date DATE,
+    summer_end_date DATE,
+    summer_rate NUMERIC(10, 2),
+    winter_start_date DATE,
+    winter_end_date DATE,
+    winter_rate NUMERIC(10, 2),
+    rate_received_date DATE,
+    rate_years_applicable INTEGER DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -305,6 +356,9 @@ ALTER TABLE agent_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_profiles ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE hotels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recreations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hotel_recreations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hotel_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transport_providers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
@@ -449,6 +503,17 @@ CREATE POLICY public_read_drivers ON drivers FOR SELECT TO authenticated USING (
 CREATE POLICY public_read_guides ON tour_guides FOR SELECT TO authenticated USING (is_suspended = FALSE OR get_user_role(auth.uid()) IN ('admin', 'agent'));
 
 CREATE POLICY admin_manage_hotels ON hotels FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
+CREATE POLICY public_read_recreations ON recreations FOR SELECT USING (true);
+CREATE POLICY admin_manage_recreations ON recreations FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
+
+CREATE POLICY public_read_hotel_recreations ON hotel_recreations FOR SELECT TO authenticated USING (true);
+CREATE POLICY admin_manage_hotel_recreations ON hotel_recreations FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
+CREATE POLICY agent_manage_hotel_recreations ON hotel_recreations FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'agent');
+
+CREATE POLICY public_read_hotel_rooms ON hotel_rooms FOR SELECT TO authenticated USING (true);
+CREATE POLICY admin_manage_hotel_rooms ON hotel_rooms FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
+CREATE POLICY agent_manage_hotel_rooms ON hotel_rooms FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'agent');
+
 CREATE POLICY admin_manage_acts ON activity_vendors FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 CREATE POLICY admin_manage_trans ON transport_providers FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 CREATE POLICY admin_manage_drivers ON drivers FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
