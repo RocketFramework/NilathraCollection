@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { X, Check } from "lucide-react";
-import { MasterDataService, TransportProvider } from "@/services/master-data.service";
+import { X, Check, Trash2, Plus } from "lucide-react";
+import { MasterDataService, TransportProvider, TransportVehicle } from "@/services/master-data.service";
 
 interface TransportProviderFormModalProps {
     isOpen: boolean;
@@ -9,25 +9,27 @@ interface TransportProviderFormModalProps {
     onSave: () => void;
 }
 
-const TABS = ["Basic Info", "Payment Details"];
+const TABS = ["Basic Info", "Vehicles", "Payment Details"];
 
 export default function TransportProviderFormModal({ isOpen, onClose, provider, onSave }: TransportProviderFormModalProps) {
     const [activeTab, setActiveTab] = useState(TABS[0]);
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState<Partial<TransportProvider>>({
-        name: "", vehicle_types: [], is_suspended: false,
-        payment_details: {}
+        name: "", phone: "", email: "", address: "", lat: undefined, lng: undefined, is_suspended: false,
+        payment_details: {},
+        transport_vehicles: []
     });
 
     useEffect(() => {
         if (isOpen) {
             if (provider) {
-                setFormData({ ...provider, payment_details: provider.payment_details || {} });
+                setFormData({ ...provider, payment_details: provider.payment_details || {}, transport_vehicles: provider.transport_vehicles || [] });
             } else {
                 setFormData({
-                    name: "", vehicle_types: [], is_suspended: false,
-                    payment_details: {}
+                    name: "", phone: "", email: "", address: "", lat: undefined, lng: undefined, is_suspended: false,
+                    payment_details: {},
+                    transport_vehicles: []
                 });
             }
             setActiveTab(TABS[0]);
@@ -38,9 +40,31 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleVehicleTypesChange = (value: string) => {
-        const types = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        handleChange('vehicle_types', types);
+    const addVehicle = () => {
+        const newVehicle: TransportVehicle = {
+            vehicle_type: "",
+            with_driver: true
+        };
+        setFormData(prev => ({
+            ...prev,
+            transport_vehicles: [...(prev.transport_vehicles || []), newVehicle]
+        }));
+    };
+
+    const updateVehicle = (index: number, field: keyof TransportVehicle, value: any) => {
+        setFormData(prev => {
+            const vehicles = [...(prev.transport_vehicles || [])];
+            vehicles[index] = { ...vehicles[index], [field]: value };
+            return { ...prev, transport_vehicles: vehicles };
+        });
+    };
+
+    const removeVehicle = (index: number) => {
+        setFormData(prev => {
+            const vehicles = [...(prev.transport_vehicles || [])];
+            vehicles.splice(index, 1);
+            return { ...prev, transport_vehicles: vehicles };
+        });
     };
 
     const handlePaymentChange = (field: string, value: string) => {
@@ -97,9 +121,25 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Company Name / Provider Name *</label>
                                 <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.name || ''} onChange={e => handleChange('name', e.target.value)} />
                             </div>
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Phone Number</label>
+                                <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.phone || ''} onChange={e => handleChange('phone', e.target.value)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Email Address</label>
+                                <input type="email" className="w-full outline-none text-brand-charcoal font-medium" value={formData.email || ''} onChange={e => handleChange('email', e.target.value)} />
+                            </div>
                             <div className="col-span-2 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Vehicle Types</label>
-                                <input type="text" placeholder="e.g. SUV, Luxury Van, Sedan (comma separated)" className="w-full outline-none text-brand-charcoal font-medium" value={(formData.vehicle_types || []).join(', ')} onChange={e => handleVehicleTypesChange(e.target.value)} />
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Address</label>
+                                <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.address || ''} onChange={e => handleChange('address', e.target.value)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Latitude</label>
+                                <input type="number" step="any" className="w-full outline-none text-brand-charcoal font-medium" value={formData.lat || ''} onChange={e => handleChange('lat', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Longitude</label>
+                                <input type="number" step="any" className="w-full outline-none text-brand-charcoal font-medium" value={formData.lng || ''} onChange={e => handleChange('lng', e.target.value ? parseFloat(e.target.value) : undefined)} />
                             </div>
                             <div className="col-span-2 mt-2">
                                 <label className="flex items-center gap-2 cursor-pointer group">
@@ -107,6 +147,65 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
                                     <span className="text-sm font-bold text-red-600 group-hover:text-red-700 transition-colors">Provider Suspended</span>
                                 </label>
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === "Vehicles" && (
+                        <div className="flex flex-col gap-6">
+                            {(formData.transport_vehicles || []).map((vehicle, index) => (
+                                <div key={index} className="border border-neutral-200 rounded-xl p-6 relative group bg-white shadow-sm hover:shadow-md transition-shadow">
+                                    <button onClick={() => removeVehicle(index)} className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                        <Trash2 size={18} />
+                                    </button>
+                                    <h4 className="font-bold text-lg text-brand-charcoal mb-4">Vehicle #{index + 1}</h4>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Vehicle Type *</label>
+                                            <input type="text" placeholder="e.g. SUV, Van, Sedan" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.vehicle_type} onChange={e => updateVehicle(index, 'vehicle_type', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Make and Model</label>
+                                            <input type="text" placeholder="e.g. Toyota Hiace" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.make_and_model || ''} onChange={e => updateVehicle(index, 'make_and_model', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Year of Manufacture</label>
+                                            <input type="number" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.year_of_manufacture || ''} onChange={e => updateVehicle(index, 'year_of_manufacture', e.target.value ? parseInt(e.target.value) : undefined)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Vehicle Number</label>
+                                            <input type="text" placeholder="e.g. WP CAA-1234" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.vehicle_number || ''} onChange={e => updateVehicle(index, 'vehicle_number', e.target.value)} />
+                                        </div>
+
+                                        <div className="col-span-2 pt-2 border-t border-neutral-100 flex items-center mb-2">
+                                            <label className="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" className="w-5 h-5 accent-brand-green rounded border-neutral-300" checked={vehicle.with_driver !== false} onChange={e => updateVehicle(index, 'with_driver', e.target.checked)} />
+                                                <span className="text-sm font-bold text-brand-charcoal">Include Driver</span>
+                                            </label>
+                                        </div>
+
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Flat KM Rate (USD)</label>
+                                            <input type="number" step="any" placeholder="e.g. 0.50" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.km_rate || ''} onChange={e => updateVehicle(index, 'km_rate', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Day Rate (USD)</label>
+                                            <input type="number" step="any" placeholder="e.g. 50" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.day_rate || ''} onChange={e => updateVehicle(index, 'day_rate', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Max KM per Day</label>
+                                            <input type="number" placeholder="e.g. 100" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.max_km_per_day || ''} onChange={e => updateVehicle(index, 'max_km_per_day', e.target.value ? parseInt(e.target.value) : undefined)} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Additional KM Rate (USD)</label>
+                                            <input type="number" step="any" placeholder="e.g. 0.60" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.additional_km_rate || ''} onChange={e => updateVehicle(index, 'additional_km_rate', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={addVehicle} className="col-span-2 border-2 border-dashed border-neutral-300 rounded-xl p-4 flex items-center justify-center gap-2 text-neutral-500 font-bold hover:text-brand-green hover:border-brand-green hover:bg-brand-green/5 transition-all outline-none">
+                                <Plus size={20} /> Add Vehicle Option
+                            </button>
                         </div>
                     )}
 

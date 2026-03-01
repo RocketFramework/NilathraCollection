@@ -313,7 +313,7 @@ export default function MasterDataPage() {
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.name}</td>
                                             <td className="p-4 text-neutral-500">Transport Provider</td>
-                                            <td className="p-4 text-neutral-500">{(row.vehicle_types || []).join(', ') || 'Various'}</td>
+                                            <td className="p-4 text-neutral-500">{(row.transport_vehicles || []).map(v => v.vehicle_type).join(', ') || 'Various'}</td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-block px-3 py-1 text-[10px] uppercase font-bold tracking-widest rounded-full ${!row.is_suspended ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                     {!row.is_suspended ? 'Active' : 'Suspended'}

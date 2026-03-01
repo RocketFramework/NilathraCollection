@@ -190,9 +190,29 @@ CREATE TABLE vendor_activities (
 CREATE TABLE transport_providers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    vehicle_types TEXT[],
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    address TEXT,
+    lat NUMERIC(10, 8),
+    lng NUMERIC(11, 8),
     is_suspended BOOLEAN DEFAULT FALSE,
     payment_detail_id UUID REFERENCES payment_details(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE transport_vehicles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    provider_id UUID REFERENCES transport_providers(id) ON DELETE CASCADE NOT NULL,
+    vehicle_type VARCHAR(255) NOT NULL,
+    make_and_model VARCHAR(255),
+    year_of_manufacture INTEGER,
+    vehicle_number VARCHAR(100),
+    with_driver BOOLEAN DEFAULT TRUE,
+    km_rate NUMERIC(10, 2),
+    day_rate NUMERIC(10, 2),
+    max_km_per_day INTEGER,
+    additional_km_rate NUMERIC(10, 2),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -415,6 +435,7 @@ ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transport_providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transport_vehicles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tour_guides ENABLE ROW LEVEL SECURITY;
 
@@ -574,6 +595,8 @@ CREATE POLICY admin_manage_core_acts ON activities FOR ALL TO authenticated USIN
 CREATE POLICY public_read_vend_acts ON vendor_activities FOR SELECT USING (true);
 CREATE POLICY admin_manage_vend_acts ON vendor_activities FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 CREATE POLICY admin_manage_trans ON transport_providers FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
+CREATE POLICY public_read_trans_veh ON transport_vehicles FOR SELECT USING (true);
+CREATE POLICY admin_manage_trans_veh ON transport_vehicles FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 CREATE POLICY admin_manage_drivers ON drivers FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 CREATE POLICY admin_manage_guides ON tour_guides FOR ALL TO authenticated USING (get_user_role(auth.uid()) = 'admin');
 

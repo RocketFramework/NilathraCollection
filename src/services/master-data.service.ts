@@ -61,13 +61,32 @@ export interface Driver {
     payment_details?: PaymentDetails;
 }
 
+export interface TransportVehicle {
+    id?: string;
+    provider_id?: string;
+    vehicle_type: string;
+    make_and_model?: string;
+    year_of_manufacture?: number;
+    vehicle_number?: string;
+    with_driver?: boolean;
+    km_rate?: number;
+    day_rate?: number;
+    max_km_per_day?: number;
+    additional_km_rate?: number;
+}
+
 export interface TransportProvider {
     id?: string;
     name: string;
-    vehicle_types?: string[];
+    phone?: string;
+    email?: string;
+    address?: string;
+    lat?: number;
+    lng?: number;
     is_suspended?: boolean;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
+    transport_vehicles?: TransportVehicle[];
 }
 
 export interface TourGuide {
@@ -194,19 +213,19 @@ export class MasterDataService {
     // Transport Providers CRUD
     // ==========================================
     static async getTransportProviders() {
-        const { data, error } = await supabase.from('transport_providers').select('*, payment_details(*)').order('name');
+        const { data, error } = await supabase.from('transport_providers').select('*, payment_details(*), transport_vehicles(*)').order('name');
         if (error) throw error;
         return data as TransportProvider[];
     }
 
     static async getTransportProvider(id: string) {
-        const { data, error } = await supabase.from('transport_providers').select('*, payment_details(*)').eq('id', id).single();
+        const { data, error } = await supabase.from('transport_providers').select('*, payment_details(*), transport_vehicles(*)').eq('id', id).single();
         if (error) throw error;
         return data as TransportProvider;
     }
 
     static async saveTransportProvider(provider: TransportProvider) {
-        const { payment_details, id, payment_detail_id, ...providerData } = provider;
+        const { payment_details, transport_vehicles, id, payment_detail_id, ...providerData } = provider;
 
         let activePaymentId = payment_detail_id;
         if (payment_details) {
@@ -215,13 +234,36 @@ export class MasterDataService {
 
         const payload = { ...providerData, payment_detail_id: activePaymentId };
 
+        let savedProviderId = id;
+
         if (id) {
             const { error } = await supabase.from('transport_providers').update(payload).eq('id', id);
             if (error) throw error;
+
+            await supabase.from('transport_vehicles').delete().eq('provider_id', id);
         } else {
-            const { error } = await supabase.from('transport_providers').insert([payload]);
+            const { data, error } = await supabase.from('transport_providers').insert([payload]).select().single();
             if (error) throw error;
+            savedProviderId = data.id;
         }
+
+        if (transport_vehicles && transport_vehicles.length > 0 && savedProviderId) {
+            const mappedVehicles = transport_vehicles.map(v => ({
+                provider_id: savedProviderId,
+                vehicle_type: v.vehicle_type,
+                make_and_model: v.make_and_model,
+                year_of_manufacture: v.year_of_manufacture,
+                vehicle_number: v.vehicle_number,
+                with_driver: v.with_driver !== undefined ? v.with_driver : true,
+                km_rate: v.km_rate,
+                day_rate: v.day_rate,
+                max_km_per_day: v.max_km_per_day,
+                additional_km_rate: v.additional_km_rate
+            }));
+            const { error: vehError } = await supabase.from('transport_vehicles').insert(mappedVehicles);
+            if (vehError) throw vehError;
+        }
+
         return true;
     }
 

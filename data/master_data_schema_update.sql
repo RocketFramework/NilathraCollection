@@ -89,6 +89,35 @@ ALTER TABLE public.hotels ADD COLUMN payment_detail_id UUID REFERENCES public.pa
 ALTER TABLE public.drivers ADD COLUMN payment_detail_id UUID REFERENCES public.payment_details(id);
 ALTER TABLE public.tour_guides ADD COLUMN payment_detail_id UUID REFERENCES public.payment_details(id);
 ALTER TABLE public.transport_providers ADD COLUMN payment_detail_id UUID REFERENCES public.payment_details(id);
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS lat NUMERIC(10, 8);
+ALTER TABLE public.transport_providers ADD COLUMN IF NOT EXISTS lng NUMERIC(11, 8);
+
+ALTER TABLE public.transport_providers DROP COLUMN IF EXISTS vehicle_types;
+
+CREATE TABLE IF NOT EXISTS public.transport_vehicles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    provider_id UUID REFERENCES public.transport_providers(id) ON DELETE CASCADE NOT NULL,
+    vehicle_type VARCHAR(255) NOT NULL,
+    make_and_model VARCHAR(255),
+    year_of_manufacture INTEGER,
+    vehicle_number VARCHAR(100),
+    with_driver BOOLEAN DEFAULT TRUE,
+    km_rate NUMERIC(10, 2),
+    day_rate NUMERIC(10, 2),
+    max_km_per_day INTEGER,
+    additional_km_rate NUMERIC(10, 2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.transport_vehicles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY public_read_transport_vehicles ON public.transport_vehicles FOR SELECT TO authenticated USING (true);
+CREATE POLICY admin_manage_transport_vehicles ON public.transport_vehicles FOR ALL TO authenticated USING (
+    (SELECT name FROM roles JOIN user_roles ON roles.id = user_roles.role_id WHERE user_roles.user_id = auth.uid() LIMIT 1) = 'admin'
+);
 
 -- 6. Update daily_activities to link to new format
 -- Note: You might need to drop the old constraints if they exist on vendor_id
