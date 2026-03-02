@@ -1,7 +1,7 @@
 "use client";
 
 import { TripProfile, ServiceScope, TripData } from "../types";
-import { Users, Calendar, Wallet, CheckSquare, Plus, Check } from "lucide-react";
+import { Users, Calendar, Wallet, CheckSquare, Plus, Check, AlertTriangle } from "lucide-react";
 import { ChangeEvent, useState } from "react";
 
 const allScopes: ServiceScope[] = [
@@ -16,6 +16,38 @@ const allScopes: ServiceScope[] = [
 ];
 
 const styles = ['Budget', 'Premium', 'Luxury', 'Ultra Luxury VIP', 'Mixed'] as const;
+
+const STANDARD_DEFINITIONS: Record<string, {
+    hotels: string;
+    vehicle: string;
+    service: string;
+    inclusions: string[];
+}> = {
+    'Budget': {
+        hotels: '3-Star / Comfortable Guest Houses',
+        vehicle: 'Compact Sedan / Shared Shuttle (Japanese/Indian)',
+        service: 'Self-managed with 24/7 Remote Support',
+        inclusions: ['Driver-cum-Guide', 'Essential Entrance Tickets', 'Standard Activity Bookings']
+    },
+    'Premium': {
+        hotels: '4-Star / Boutique Collection',
+        vehicle: 'Luxury Sedan / SUV (Toyota Premio/Allion/X-Trail)',
+        service: 'Professional English Speaking Chauffeur Guide',
+        inclusions: ['All Entrance Tickets', 'Curated Activity Bookings', 'Welcome Gift Pack', 'Bottled Water daily']
+    },
+    'Luxury': {
+        hotels: '5-Star / Signature Luxury Resorts',
+        vehicle: 'Premium SUV / Luxury Van (Land Cruiser/Prado/KDH Luxury)',
+        service: 'Expert Naturalist/National Guide & Dedicated Chauffeur',
+        inclusions: ['VIP Fast-track Arrival', 'All Activities & Gear', 'Daily Spa/Wellness Session', 'Premium Dining Reservations', 'Personalized Itinerary Manager']
+    },
+    'Ultra Luxury VIP': {
+        hotels: 'Ultra-Luxury Villas / Presidential Suites',
+        vehicle: 'Luxury Limousine / Private Helicopter Transfers',
+        service: 'Private Butler, Concierge & Elite Guide Team',
+        inclusions: ['Private Jet/Heli Charters', 'Exclusive "Money-can\'t-buy" Experiences', 'Daily Spa & Holistic Wellness', 'Personal Chef & Waitstaff', 'Full End-to-End White Glove Handling']
+    }
+};
 
 export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripData, updateData: (d: Partial<TripData>) => void }) {
 
@@ -214,9 +246,34 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
                                 <span className="absolute left-3 top-[25px] text-neutral-400 font-medium text-sm">$</span>
                             </div>
                             {profile.budgetPerPerson > 0 && (
-                                <p className="text-xs font-semibold text-brand-green bg-brand-green/10 p-2 rounded">
-                                    ~ ${profile.budgetPerPerson.toLocaleString()} per person automatically inferred.
-                                </p>
+                                (() => {
+                                    const totalPax = (Number(profile.adults) || 0) + (Number(profile.children) || 0);
+                                    let budgetPerDay = 0;
+                                    if (profile.durationDays > 0) {
+                                        budgetPerDay = Math.round(Number(profile.budgetTotal) / (totalPax * profile.durationDays));
+                                    }
+
+                                    let alertMsg = '';
+                                    if (budgetPerDay > 0) {
+                                        if (profile.travelStyle === 'Budget' && budgetPerDay < 90) alertMsg = 'Below minimum for Budget ($90/day/pax)';
+                                        else if (profile.travelStyle === 'Premium' && budgetPerDay < 180) alertMsg = 'Below minimum for Premium ($180/day/pax)';
+                                        else if (profile.travelStyle === 'Luxury' && budgetPerDay < 600) alertMsg = 'Below minimum for Luxury ($600/day/pax)';
+                                        else if (profile.travelStyle === 'Ultra Luxury VIP' && budgetPerDay < 1500) alertMsg = 'Below minimum for Ultra Luxury VIP ($1500/day/pax)';
+                                    }
+
+                                    return (
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-brand-green bg-brand-green/10 p-2 rounded">
+                                                ~ ${profile.budgetPerPerson.toLocaleString()} per person {budgetPerDay > 0 ? `($${budgetPerDay.toLocaleString()} per day)` : ''} automatically inferred.
+                                            </p>
+                                            {alertMsg && (
+                                                <p className="text-xs font-semibold text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 flex items-center gap-1">
+                                                    <AlertTriangle size={14} className="shrink-0" /> {alertMsg}
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })()
                             )}
                         </div>
                     </div>
@@ -236,6 +293,36 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
                                 </button>
                             ))}
                         </div>
+
+                        {profile.travelStyle && profile.travelStyle !== 'Mixed' && (
+                            <div className="mt-4 p-5 bg-neutral-50 rounded-2xl border border-neutral-200 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Accommodation</span>
+                                        <p className="text-xs font-medium text-brand-charcoal">{STANDARD_DEFINITIONS[profile.travelStyle].hotels}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Transport</span>
+                                        <p className="text-xs font-medium text-brand-charcoal">{STANDARD_DEFINITIONS[profile.travelStyle].vehicle}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Service Level</span>
+                                        <p className="text-xs font-medium text-brand-charcoal">{STANDARD_DEFINITIONS[profile.travelStyle].service}</p>
+                                    </div>
+                                </div>
+                                <div className="pt-3 border-t border-neutral-200">
+                                    <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider block mb-2">Key Inclusions</span>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                        {STANDARD_DEFINITIONS[profile.travelStyle].inclusions.map((inc, i) => (
+                                            <div key={i} className="flex items-center gap-1.5">
+                                                <div className="w-1 h-1 rounded-full bg-brand-gold" />
+                                                <span className="text-[11px] text-neutral-600 font-medium">{inc}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-4">
                         <label className="text-sm font-semibold uppercase tracking-wide block">Special Client Conditions Note</label>
