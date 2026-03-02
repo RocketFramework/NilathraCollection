@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus, Trash2, Check } from "lucide-react";
-import { Hotel, HotelRoom, HotelRecreation, HotelService } from "@/services/hotel.service";
+import { Hotel, HotelRoom, HotelService } from "@/services/hotel.service";
 
 interface HotelFormModalProps {
     isOpen: boolean;
@@ -14,7 +14,7 @@ const TABS = ["Basic Info", "Contacts", "Amenities", "Recreations", "Rooms", "Pa
 export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: HotelFormModalProps) {
     const [activeTab, setActiveTab] = useState(TABS[0]);
     const [loading, setLoading] = useState(false);
-    const [masterRecreations, setMasterRecreations] = useState<any[]>([]);
+    const [masterRecreations, setMasterRecreations] = useState<Array<{ id: string, name: string }>>([]);
 
     // Form State
     const [formData, setFormData] = useState<Partial<Hotel>>({
@@ -75,11 +75,11 @@ export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: Hotel
         }
     };
 
-    const handleChange = (field: keyof Hotel, value: any) => {
+    const handleChange = (field: keyof Hotel, value: string | number | boolean | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleRoomChange = (index: number, field: keyof HotelRoom, value: any) => {
+    const handleRoomChange = (index: number, field: keyof HotelRoom, value: string | number | boolean | undefined) => {
         const updatedRooms = [...(formData.rooms || [])];
         updatedRooms[index] = { ...updatedRooms[index], [field]: value };
         setFormData(prev => ({ ...prev, rooms: updatedRooms }));
@@ -145,15 +145,24 @@ export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: Hotel
         if (!formData.location_coordinates) return alert("Location coordinates are required");
         setLoading(true);
         try {
+            let savedHotel: Hotel;
             if (formData.id) {
-                await HotelService.updateHotel(formData as Hotel);
+                savedHotel = await HotelService.updateHotel(formData as Hotel);
             } else {
-                await HotelService.createHotel(formData as Hotel);
+                savedHotel = await HotelService.createHotel(formData as Hotel);
             }
             onSave();
-            onClose();
-        } catch (err: any) {
-            alert(`Error saving hotel: ${err.message}`);
+
+            // Re-fetch to get all nested IDs and full state
+            if (savedHotel.id) {
+                const updated = await HotelService.getHotel(savedHotel.id);
+                setFormData({ ...updated });
+            }
+
+            alert("Hotel saved successfully.");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "An unknown error occurred";
+            alert(`Error saving hotel: ${message}`);
         } finally {
             setLoading(false);
         }

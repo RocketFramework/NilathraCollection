@@ -114,13 +114,23 @@ export class HotelService {
         if (recreationsError) throw recreationsError;
 
         // Map recreations to include name smoothly
-        const mappedRecreations = recreationsData.map((ha: any) => ({
-            id: ha.id,
-            hotel_id: id,
-            recreation_id: ha.recreation_id,
-            additional_charge: ha.additional_charge,
-            recreation_name: ha.recreations?.name
-        }));
+        const mappedRecreations = (recreationsData as unknown as Array<{
+            id: string;
+            recreation_id: string;
+            additional_charge: boolean;
+            recreations: { name: string } | Array<{ name: string }> | null;
+        }>).map((ha) => {
+            const recName = Array.isArray(ha.recreations)
+                ? ha.recreations[0]?.name
+                : ha.recreations?.name;
+            return {
+                id: ha.id,
+                hotel_id: id,
+                recreation_id: ha.recreation_id,
+                additional_charge: ha.additional_charge,
+                recreation_name: recName
+            };
+        });
 
         return {
             ...hotelData,
@@ -147,7 +157,7 @@ export class HotelService {
      */
     static async createHotel(hotel: Hotel) {
         // 1. Insert Hotel
-        const { rooms, recreations, id, payment_details, payment_detail_id, ...hotelData } = hotel;
+        const { rooms, recreations, id: _, payment_details, payment_detail_id, ...hotelData } = hotel;
 
         // Handle Payment Details
         let activePaymentId = payment_detail_id;
@@ -202,8 +212,8 @@ export class HotelService {
     static async updateHotel(hotel: Hotel) {
         if (!hotel.id) throw new Error("Hotel ID is required for update");
 
-        const { rooms, recreations, id, payment_details, payment_detail_id, ...hotelData } = hotel;
-        const hotelId = id;
+        const { rooms, recreations, id: _, payment_details, payment_detail_id, ...hotelData } = hotel;
+        const hotelId = hotel.id as string;
 
         // Handle Payment Details
         let activePaymentId = payment_detail_id;
@@ -235,7 +245,7 @@ export class HotelService {
         if (rooms && rooms.length > 0) {
             // Remove 'id' if present so we insert fresh UUIDs, or keep if UUID generation is handled
             const roomsToInsert = rooms.map(r => {
-                const { id, ...roomRest } = r;
+                const { id: _, ...roomRest } = r;
                 return { ...roomRest, hotel_id: hotelId };
             });
             const { error: roomsError } = await supabase

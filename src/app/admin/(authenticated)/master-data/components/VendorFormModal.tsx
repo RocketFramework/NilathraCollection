@@ -48,7 +48,7 @@ export default function VendorFormModal({ isOpen, onClose, vendor, onSave }: Ven
         }
     };
 
-    const handleChange = (field: keyof Vendor, value: any) => {
+    const handleChange = (field: keyof Vendor, value: string | number | boolean | string[] | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -103,11 +103,22 @@ export default function VendorFormModal({ isOpen, onClose, vendor, onSave }: Ven
         if (!formData.name) return alert("Vendor name is required");
         setLoading(true);
         try {
-            await MasterDataService.saveVendor(formData as Vendor);
+            const savedId = await MasterDataService.saveVendor(formData as Vendor);
             onSave();
-            onClose();
-        } catch (error: any) {
-            alert(`Error saving vendor: ${error.message}`);
+
+            if (savedId) {
+                const updated = await MasterDataService.getVendor(savedId);
+                setFormData({
+                    ...updated,
+                    vendor_activities: updated.vendor_activities || [],
+                    payment_details: updated.payment_details || {}
+                });
+                setCoordinateInput((updated.lat && updated.lng) ? `${updated.lat}, ${updated.lng}` : "");
+            }
+            alert("Vendor saved successfully.");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred";
+            alert(`Error saving vendor: ${message}`);
         } finally {
             setLoading(false);
         }

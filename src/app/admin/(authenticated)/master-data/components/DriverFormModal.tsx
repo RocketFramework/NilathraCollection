@@ -34,7 +34,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
         }
     }, [isOpen, driver]);
 
-    const handleChange = (field: keyof Driver, value: any) => {
+    const handleChange = (field: keyof Driver, value: string | boolean | number | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -49,11 +49,17 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
         if (!formData.first_name) return alert("First name is required");
         setLoading(true);
         try {
-            await MasterDataService.saveDriver(formData as Driver);
+            const savedId = await MasterDataService.saveDriver(formData as Driver);
             onSave();
-            onClose();
-        } catch (error: any) {
-            alert(`Error saving driver: ${error.message}`);
+
+            if (savedId) {
+                const updated = await MasterDataService.getDriver(savedId);
+                setFormData({ ...updated, payment_details: updated.payment_details || {} });
+            }
+            alert("Driver saved successfully.");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred";
+            alert(`Error saving driver: ${message}`);
         } finally {
             setLoading(false);
         }

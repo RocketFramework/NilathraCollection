@@ -37,7 +37,7 @@ export default function TourGuideFormModal({ isOpen, onClose, guide, onSave }: T
         }
     }, [isOpen, guide]);
 
-    const handleChange = (field: keyof TourGuide, value: any) => {
+    const handleChange = (field: keyof TourGuide, value: string | number | boolean | string[] | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -65,11 +65,17 @@ export default function TourGuideFormModal({ isOpen, onClose, guide, onSave }: T
         if (!formData.first_name) return alert("First name is required");
         setLoading(true);
         try {
-            await MasterDataService.saveTourGuide(formData as TourGuide);
+            const savedId = await MasterDataService.saveTourGuide(formData as TourGuide);
             onSave();
-            onClose();
-        } catch (error: any) {
-            alert(`Error saving guide: ${error.message}`);
+
+            if (savedId) {
+                const updated = await MasterDataService.getTourGuide(savedId);
+                setFormData({ ...updated, payment_details: updated.payment_details || {} });
+            }
+            alert("Tour Guide saved successfully.");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred";
+            alert(`Error saving guide: ${message}`);
         } finally {
             setLoading(false);
         }

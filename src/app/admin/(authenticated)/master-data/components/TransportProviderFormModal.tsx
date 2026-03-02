@@ -39,7 +39,7 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
         }
     }, [isOpen, provider]);
 
-    const handleChange = (field: keyof TransportProvider, value: any) => {
+    const handleChange = (field: keyof TransportProvider, value: string | boolean | number | object | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -72,7 +72,7 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
         }));
     };
 
-    const updateVehicle = (index: number, field: keyof TransportVehicle, value: any) => {
+    const updateVehicle = (index: number, field: keyof TransportVehicle, value: string | boolean | number | undefined) => {
         setFormData(prev => {
             const vehicles = [...(prev.transport_vehicles || [])];
             vehicles[index] = { ...vehicles[index], [field]: value };
@@ -99,11 +99,24 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
         if (!formData.name) return alert("Name is required");
         setLoading(true);
         try {
-            await MasterDataService.saveTransportProvider(formData as TransportProvider);
+            const savedId = await MasterDataService.saveTransportProvider(formData as TransportProvider);
             onSave();
-            onClose();
-        } catch (error: any) {
-            alert(`Error saving transport provider: ${error.message}`);
+
+            // Re-fetch the saved provider to update form data with any new IDs (from DB)
+            if (savedId) {
+                const updatedProvider = await MasterDataService.getTransportProvider(savedId);
+                setFormData({
+                    ...updatedProvider,
+                    payment_details: updatedProvider.payment_details || {},
+                    transport_vehicles: updatedProvider.transport_vehicles || []
+                });
+                setCoordinateInput((updatedProvider.lat && updatedProvider.lng) ? `${updatedProvider.lat}, ${updatedProvider.lng}` : "");
+            }
+
+            alert("Transport provider saved successfully.");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred";
+            alert(`Error saving transport provider: ${message}`);
         } finally {
             setLoading(false);
         }
@@ -183,7 +196,37 @@ export default function TransportProviderFormModal({ isOpen, onClose, provider, 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
                                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Vehicle Type *</label>
-                                            <input type="text" placeholder="e.g. SUV, Van, Sedan" className="w-full outline-none text-brand-charcoal font-medium" value={vehicle.vehicle_type} onChange={e => updateVehicle(index, 'vehicle_type', e.target.value)} />
+                                            <select
+                                                className="w-full outline-none text-brand-charcoal font-medium bg-transparent"
+                                                value={vehicle.vehicle_type}
+                                                onChange={e => updateVehicle(index, 'vehicle_type', e.target.value)}
+                                            >
+                                                <option value="">Select Type</option>
+                                                <optgroup label="SMALL GROUP (1–3 Pax)">
+                                                    <option value="SMALL_BUDGET_SEDAN">Budget Sedan</option>
+                                                    <option value="SMALL_PREMIUM_SEDAN">Premium Sedan</option>
+                                                    <option value="SMALL_LUXURY_SUV">Luxury SUV</option>
+                                                    <option value="SMALL_ULTRA_VIP_EUROPE_SEDAN">Ultra VIP Europe Sedan</option>
+                                                    <option value="SMALL_ULTRA_VIP_EUROPE_SUV">Ultra VIP Europe SUV</option>
+                                                    <option value="SMALL_ULTRA_VIP_ARMORED_SUV">Ultra VIP Armored SUV</option>
+                                                </optgroup>
+                                                <optgroup label="MEDIUM GROUP (4–9 Pax)">
+                                                    <option value="MEDIUM_BUDGET_VAN">Budget Van</option>
+                                                    <option value="MEDIUM_PREMIUM_HIGHROOF_VAN">Premium Highroof Van</option>
+                                                    <option value="MEDIUM_LUXURY_EXECUTIVE_VAN">Luxury Executive Van</option>
+                                                    <option value="MEDIUM_ULTRA_VIP_EUROPE_SUV_FLEET">Ultra VIP Europe SUV Fleet</option>
+                                                    <option value="MEDIUM_ULTRA_VIP_EXECUTIVE_VAN">Ultra VIP Executive Van</option>
+                                                    <option value="MEDIUM_ULTRA_VIP_HELICOPTER_TRANSFER">Ultra VIP Helicopter Transfer</option>
+                                                </optgroup>
+                                                <optgroup label="LARGE GROUP (10–25 Pax)">
+                                                    <option value="LARGE_BUDGET_MINI_COACH">Budget Mini Coach</option>
+                                                    <option value="LARGE_PREMIUM_COACH">Premium Coach</option>
+                                                    <option value="LARGE_LUXURY_EXECUTIVE_COACH">Luxury Executive Coach</option>
+                                                    <option value="LARGE_ULTRA_VIP_EUROPE_COACH">Ultra VIP Europe Coach</option>
+                                                    <option value="LARGE_ULTRA_VIP_EXECUTIVE_VAN_FLEET">Ultra VIP Executive Van Fleet</option>
+                                                    <option value="LARGE_ULTRA_VIP_PRIVATE_JET">Ultra VIP Private Jet</option>
+                                                </optgroup>
+                                            </select>
                                         </div>
                                         <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
                                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Make and Model</label>

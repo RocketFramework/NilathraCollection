@@ -1,26 +1,47 @@
 "use client";
 
-import { TripData, TransportBooking } from "../types";
-import { Car, CarFront, Plus, Trash2, ShieldCheck, FileCheck } from "lucide-react";
+import { TripData, TransportBooking, TravelStyle } from "../types";
+import { Car, CarFront, Plus, Trash2, ShieldCheck, FileCheck, Sparkles } from "lucide-react";
+import { useEffect } from "react";
+
+const getRecommendedMode = (totalPax: number, style: TravelStyle): TransportBooking['mode'] => {
+    if (totalPax <= 3) {
+        if (style === 'Budget') return 'SMALL_BUDGET_SEDAN';
+        if (style === 'Premium') return 'SMALL_PREMIUM_SEDAN';
+        if (style === 'Luxury') return 'SMALL_LUXURY_SUV';
+        if (style === 'Ultra Luxury VIP') return 'SMALL_ULTRA_VIP_EUROPE_SUV';
+        return 'SMALL_PREMIUM_SEDAN';
+    } else if (totalPax <= 9) {
+        if (style === 'Budget') return 'MEDIUM_BUDGET_VAN';
+        if (style === 'Premium') return 'MEDIUM_PREMIUM_HIGHROOF_VAN';
+        if (style === 'Luxury') return 'MEDIUM_LUXURY_EXECUTIVE_VAN';
+        if (style === 'Ultra Luxury VIP') return 'MEDIUM_ULTRA_VIP_EXECUTIVE_VAN';
+        return 'MEDIUM_PREMIUM_HIGHROOF_VAN';
+    } else {
+        if (style === 'Budget') return 'LARGE_BUDGET_MINI_COACH';
+        if (style === 'Premium') return 'LARGE_PREMIUM_COACH';
+        if (style === 'Luxury') return 'LARGE_LUXURY_EXECUTIVE_COACH';
+        if (style === 'Ultra Luxury VIP') return 'LARGE_ULTRA_VIP_EUROPE_COACH';
+        return 'LARGE_PREMIUM_COACH';
+    }
+};
 
 export function TransportStep({ tripData, updateTransport }: { tripData: TripData, updateTransport: (t: TransportBooking[]) => void }) {
 
-    if (!tripData.serviceScopes.includes('Arrange Transport')) {
-        return (
-            <div className="bg-neutral-50 p-12 text-center rounded-3xl border border-dashed border-neutral-300">
-                <CarFront className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                <h3 className="text-lg font-medium text-neutral-600">Transport Module Disabled</h3>
-                <p className="text-sm text-neutral-400 mt-2">To align logistics and vehicles, enable &quot;Arrange Transport&quot; in Step 1.</p>
-            </div>
-        );
-    }
-
     const { transports } = tripData;
+
+    const totalPax = (tripData.profile.adults || 0) + (tripData.profile.children || 0);
+    const recommended = getRecommendedMode(totalPax, tripData.profile.travelStyle);
+
+    const updateTransportField = (id: string, field: keyof TransportBooking, value: string | boolean | number) => {
+        const updated = transports.map(t => t.id === id ? { ...t, [field]: value } : t);
+        updateTransport(updated);
+    };
 
     const addVehicle = () => {
         const newTrans: TransportBooking = {
             id: crypto.randomUUID(),
-            mode: 'SMALL_PREMIUM_SEDAN',
+            mode: recommended,
             supplier: '',
             vehicleNumber: '',
             driverName: '',
@@ -35,13 +56,39 @@ export function TransportStep({ tripData, updateTransport }: { tripData: TripDat
         updateTransport([...transports, newTrans]);
     };
 
-    const removeTransport = (id: string) => {
-        updateTransport(transports.filter(t => t.id !== id));
+    // Auto-fill logic: only run if the module is enabled and we have zero segments
+    // BUT we need to distinguish between "initial empty state" and "user explicitly removed everything"
+    // We'll only auto-fill if the module was just enabled or it's the first render with the module enabled
+    useEffect(() => {
+        const isTransportEnabled = tripData.serviceScopes.includes('Arrange Transport');
+        // If it's enabled and we have literally NO segments, we add the first recommended one
+        // To avoid the loop when deleting, we can check if it's the very first time we see it enabled
+        // Or simpler: only add if transports is undefined/null (though here it's an array)
+        // Actually, the most robust way is to check if it's the first time we are seeing 0 segments in this session
+        // but wait, if the user navigates away and back, it should probably still be there.
+        // Let's settle for: only auto-fill if transports is empty AND it matches the initial state of the trip record
+        if (isTransportEnabled && transports.length === 0) {
+            // We only add if this is likely the first time the user is interacting with this step
+            addVehicle();
+        }
+    }, [tripData.serviceScopes.includes('Arrange Transport')]); // Only depend on the boolean flag, not the length!
+
+    if (!tripData.serviceScopes.includes('Arrange Transport')) {
+        return (
+            <div className="bg-neutral-50 p-12 text-center rounded-3xl border border-dashed border-neutral-300">
+                <CarFront className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-600">Transport Module Disabled</h3>
+                <p className="text-sm text-neutral-400 mt-2">To align logistics and vehicles, enable &quot;Arrange Transport&quot; in Step 1.</p>
+            </div>
+        );
+    }
+
+    const applyRecommendation = (id: string) => {
+        updateTransportField(id, 'mode', recommended);
     };
 
-    const updateTransportField = (id: string, field: keyof TransportBooking, value: string | boolean) => {
-        const updated = transports.map(t => t.id === id ? { ...t, [field]: value } : t);
-        updateTransport(updated);
+    const removeTransport = (id: string) => {
+        updateTransport(transports.filter(t => t.id !== id));
     };
 
     const iconForMode = (mode: string) => {
@@ -87,6 +134,15 @@ export function TransportStep({ tripData, updateTransport }: { tripData: TripDat
                                 <div className="flex items-center gap-3">
                                     <span className="font-semibold text-neutral-700 uppercase tracking-wide">Transport Segment {idx + 1}: {formatModeLabel(trans.mode)}</span>
                                     {iconForMode(trans.mode)}
+                                    {trans.mode !== recommended && (
+                                        <button
+                                            onClick={() => applyRecommendation(trans.id)}
+                                            className="flex items-center gap-1.5 text-[10px] bg-brand-gold/10 text-brand-gold px-2 py-1 rounded-full border border-brand-gold/20 hover:bg-brand-gold/20 transition-all font-bold"
+                                            title={`Recommended: ${formatModeLabel(recommended)}`}
+                                        >
+                                            <Sparkles size={10} /> Use Recommended
+                                        </button>
+                                    )}
                                 </div>
                                 <button onClick={() => removeTransport(trans.id)} className="text-red-500 hover:text-red-700 font-medium flex items-center gap-1">
                                     <Trash2 size={14} /> Remove Segment

@@ -43,7 +43,7 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurant, onSav
         }
     }, [isOpen, restaurant]);
 
-    const handleChange = (field: keyof Restaurant, value: any) => {
+    const handleChange = (field: keyof Restaurant, value: string | number | boolean | undefined) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -76,11 +76,18 @@ export default function RestaurantFormModal({ isOpen, onClose, restaurant, onSav
         if (!formData.name) return alert("Restaurant name is required");
         setLoading(true);
         try {
-            await MasterDataService.saveRestaurant(formData as Restaurant);
+            const savedId = await MasterDataService.saveRestaurant(formData as Restaurant);
             onSave();
-            onClose();
-        } catch (error: any) {
-            alert(`Error saving restaurant: ${error.message}`);
+
+            if (savedId) {
+                const updated = await MasterDataService.getRestaurant(savedId);
+                setFormData({ ...updated, payment_details: updated.payment_details || {} });
+                setCoordinateInput((updated.lat && updated.lng) ? `${updated.lat}, ${updated.lng}` : "");
+            }
+            alert("Restaurant saved successfully.");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred";
+            alert(`Error saving restaurant: ${message}`);
         } finally {
             setLoading(false);
         }

@@ -210,13 +210,24 @@ export class MasterDataService {
 
         if (vActsError) throw vActsError;
 
-        const mappedActs = vActivities.map((va: any) => ({
-            id: va.id,
-            vendor_id: va.vendor_id,
-            activity_id: va.activity_id,
-            vendor_price: va.vendor_price,
-            activity_name: va.activities?.activity_name
-        }));
+        const mappedActs = (vActivities as unknown as Array<{
+            id: string;
+            vendor_id: string;
+            activity_id: number;
+            vendor_price: number;
+            activities: { activity_name: string } | Array<{ activity_name: string }> | null;
+        }>).map((va) => {
+            const actName = Array.isArray(va.activities)
+                ? va.activities[0]?.activity_name
+                : va.activities?.activity_name;
+            return {
+                id: va.id,
+                vendor_id: va.vendor_id,
+                activity_id: va.activity_id,
+                vendor_price: va.vendor_price,
+                activity_name: actName
+            };
+        });
 
         return { ...data, vendor_activities: mappedActs } as Vendor;
     }
@@ -258,7 +269,7 @@ export class MasterDataService {
             if (actsError) throw actsError;
         }
 
-        return true;
+        return savedVendorId;
     }
 
     static async deleteVendor(id: string) {
@@ -322,7 +333,7 @@ export class MasterDataService {
             if (vehError) throw vehError;
         }
 
-        return true;
+        return savedProviderId;
     }
 
     static async deleteTransportProvider(id: string) {
@@ -356,14 +367,16 @@ export class MasterDataService {
 
         const payload = { ...driverData, payment_detail_id: activePaymentId };
 
+        let savedId = id;
         if (id) {
             const { error } = await supabase.from('drivers').update(payload).eq('id', id);
             if (error) throw error;
         } else {
-            const { error } = await supabase.from('drivers').insert([payload]);
+            const { data, error } = await supabase.from('drivers').insert([payload]).select().single();
             if (error) throw error;
+            savedId = data.id;
         }
-        return true;
+        return savedId;
     }
 
     static async deleteDriver(id: string) {
@@ -397,14 +410,16 @@ export class MasterDataService {
 
         const payload = { ...guideData, payment_detail_id: activePaymentId };
 
+        let savedId = id;
         if (id) {
             const { error } = await supabase.from('tour_guides').update(payload).eq('id', id);
             if (error) throw error;
         } else {
-            const { error } = await supabase.from('tour_guides').insert([payload]);
+            const { data, error } = await supabase.from('tour_guides').insert([payload]).select().single();
             if (error) throw error;
+            savedId = data.id;
         }
-        return true;
+        return savedId;
     }
 
     static async deleteTourGuide(id: string) {
@@ -438,14 +453,16 @@ export class MasterDataService {
 
         const payload = { ...restaurantData, payment_detail_id: activePaymentId };
 
+        let savedId = id;
         if (id) {
             const { error } = await supabase.from('restaurants').update(payload).eq('id', id);
             if (error) throw error;
         } else {
-            const { error } = await supabase.from('restaurants').insert([payload]);
+            const { data, error } = await supabase.from('restaurants').insert([payload]).select().single();
             if (error) throw error;
+            savedId = data.id;
         }
-        return true;
+        return savedId;
     }
 
     static async deleteRestaurant(id: string) {
