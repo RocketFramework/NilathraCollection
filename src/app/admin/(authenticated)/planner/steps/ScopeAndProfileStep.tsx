@@ -1,8 +1,8 @@
 "use client";
 
 import { TripProfile, ServiceScope, TripData } from "../types";
-import { Users, Calendar, Wallet, CheckSquare, Plus, Check, AlertTriangle } from "lucide-react";
-import { ChangeEvent, useState } from "react";
+import { Users, Calendar, Wallet, CheckSquare, Check, AlertTriangle } from "lucide-react";
+import { useState } from "react";
 
 const allScopes: ServiceScope[] = [
     'Book International Flights',
@@ -88,7 +88,7 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
         updateData(updates);
     };
 
-    const updateProfile = (field: keyof TripProfile, value: any) => {
+    const updateProfile = (field: keyof TripProfile, value: string | number | boolean | object) => {
         const newProfile = { ...profile, [field]: value };
 
         // Auto-calculate duration logic

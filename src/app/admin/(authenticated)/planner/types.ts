@@ -92,7 +92,36 @@ export interface AccommodationBooking {
 
 export interface TransportBooking {
     id: string;
-    mode: 'Bus' | 'Sedan' | 'SUV' | 'Luxury Van' | 'Tuk Tuk' | 'Helicopter' | 'Private Jet' | 'Train';
+    mode:
+    // =========================
+    // SMALL GROUP (1–3 Pax)
+    // =========================
+    | 'SMALL_BUDGET_SEDAN'
+    | 'SMALL_PREMIUM_SEDAN'
+    | 'SMALL_LUXURY_SUV'
+    | 'SMALL_ULTRA_VIP_EUROPE_SEDAN'
+    | 'SMALL_ULTRA_VIP_EUROPE_SUV'
+    | 'SMALL_ULTRA_VIP_ARMORED_SUV'
+
+    // =========================
+    // MEDIUM GROUP (4–9 Pax)
+    // =========================
+    | 'MEDIUM_BUDGET_VAN'
+    | 'MEDIUM_PREMIUM_HIGHROOF_VAN'
+    | 'MEDIUM_LUXURY_EXECUTIVE_VAN'
+    | 'MEDIUM_ULTRA_VIP_EUROPE_SUV_FLEET'
+    | 'MEDIUM_ULTRA_VIP_EXECUTIVE_VAN'
+    | 'MEDIUM_ULTRA_VIP_HELICOPTER_TRANSFER'
+
+    // =========================
+    // LARGE GROUP (10–25 Pax)
+    // =========================
+    | 'LARGE_BUDGET_MINI_COACH'
+    | 'LARGE_PREMIUM_COACH'
+    | 'LARGE_LUXURY_EXECUTIVE_COACH'
+    | 'LARGE_ULTRA_VIP_EUROPE_COACH'
+    | 'LARGE_ULTRA_VIP_EXECUTIVE_VAN_FLEET'
+    | 'LARGE_ULTRA_VIP_PRIVATE_JET';
     supplier: string;
     vehicleNumber: string;
     driverName: string;
