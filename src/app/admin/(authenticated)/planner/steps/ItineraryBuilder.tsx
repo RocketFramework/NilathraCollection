@@ -671,7 +671,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                             className="flex items-center gap-2 px-3 py-1.5 bg-brand-gold/5 border border-brand-gold/20 rounded-full text-[11px] font-bold text-brand-gold hover:bg-brand-gold/10 transition-colors"
                                                         >
                                                             {binding.icon}
-                                                            <span className="truncate max-w-[120px]">{binding.name}</span>
+                                                            <span className="truncate max-w-[120px]" title={binding.name}>{binding.name}</span>
                                                         </button>
                                                     ) : (
                                                         <button
@@ -726,7 +726,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                 {activeAssignment.type === 'sleep' && (filteredMasterData as any[]).map(h => (
                                     <button key={h.id} onClick={() => bindProvider(activeAssignment.blockId, 'hotelId', h.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
                                         <div>
-                                            <p className="font-bold text-sm text-neutral-800">{h.name}</p>
+                                            <p className="font-bold text-sm text-neutral-800 truncate max-w-[280px]" title={h.name}>{h.name}</p>
                                             <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{h.closest_city} • {h.hotel_class}</p>
                                         </div>
                                         <ChevronRight size={16} className="text-neutral-200 group-hover:text-brand-gold transform group-hover:translate-x-1 transition-all" />
@@ -738,7 +738,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                             <div key={v.id} className="border-b last:border-0">
                                                 <button onClick={() => bindProvider(activeAssignment.blockId, 'vendorId', v.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
                                                     <div>
-                                                        <p className="font-bold text-sm text-neutral-800">{v.name}</p>
+                                                        <p className="font-bold text-sm text-neutral-800 truncate max-w-[280px]" title={v.name}>{v.name}</p>
                                                         <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{v.vendor_activities?.length || 0} Activities Offered</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
@@ -766,7 +766,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                     }`}
                                                             >
                                                                 <div>
-                                                                    <p className="text-xs font-bold text-neutral-800">{va.activity_name}</p>
+                                                                    <p className="text-xs font-bold text-neutral-800 truncate max-w-[240px]" title={va.activity_name}>{va.activity_name}</p>
                                                                     <div className="flex gap-2 mt-1">
                                                                         <span className="text-[9px] bg-brand-gold/10 px-1.5 py-0.5 rounded text-brand-gold font-bold">LKR {va.vendor_price?.toLocaleString()}</span>
                                                                     </div>
@@ -801,7 +801,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                             <div key={tp.id} className="border-b last:border-0">
                                                 <button onClick={() => bindProvider(activeAssignment.blockId, 'transportId', tp.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
                                                     <div>
-                                                        <p className="font-bold text-sm text-neutral-800">{tp.name}</p>
+                                                        <p className="font-bold text-sm text-neutral-800 truncate max-w-[280px]" title={tp.name}>{tp.name}</p>
                                                         <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{tp.transport_vehicles?.length || 0} Vehicles Available</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
@@ -833,7 +833,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                     }`}
                                                             >
                                                                 <div>
-                                                                    <p className="text-xs font-bold text-neutral-800">{v.make_and_model || v.vehicle_type}</p>
+                                                                    <p className="text-xs font-bold text-neutral-800 truncate max-w-[280px]" title={v.make_and_model || v.vehicle_type}>{v.make_and_model || v.vehicle_type}</p>
                                                                     <div className="flex gap-2 mt-1">
                                                                         <span className="text-[9px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-bold uppercase">{v.vehicle_number}</span>
                                                                         {v.with_driver && <span className="text-[9px] bg-green-100 px-1.5 py-0.5 rounded text-green-600 font-bold uppercase">Incl. Driver</span>}
