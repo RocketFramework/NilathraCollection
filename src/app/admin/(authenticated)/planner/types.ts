@@ -162,6 +162,7 @@ export interface InternalItineraryBlock {
     vendorId?: string;
     activityId?: number;
     transportId?: string;
+    vehicleId?: string;
     driverId?: string;
     guideId?: string;
     restaurantId?: string;
@@ -206,6 +207,7 @@ export interface TripData {
     defaultDriverId?: string;
     defaultGuideId?: string;
     defaultTransportId?: string;
+    defaultVehicleId?: string;
 
     flights: FlightBooking[];
     accommodations: AccommodationBooking[];

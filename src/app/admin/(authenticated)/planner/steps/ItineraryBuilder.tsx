@@ -5,7 +5,7 @@ import {
     ListTree, MapPin, CalendarDays, Navigation, Utensils, BedDouble, AlertCircle, GripVertical,
     Rocket, RefreshCcw, ArrowUp, ArrowDown, Activity as ActivityIcon, ChevronLeft, ChevronRight,
     Trash2, Link, Link2Off, UserCheck, ShieldCheck, Car as CarIcon, Coffee, Info, Calculator,
-    CheckCircle2, AlertTriangle, Search, X
+    CheckCircle2, AlertTriangle, Search, X, Check
 } from "lucide-react";
 import { generateRoutePlan, GeoLocation } from "@/lib/route-engine";
 import { useState, useEffect, useMemo } from "react";
@@ -221,33 +221,55 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
         let hotels = 0;
         let acts = 0;
         let rest = 0;
+        let trans = 0;
+        const pax = (tripData.profile.adults || 0) + (tripData.profile.children || 0);
 
         // Count hotel costs
         tripData.accommodations.forEach(h => {
             hotels += (h.pricePerNight || 0) * (h.numberOfRooms || 1);
         });
 
+        // Count transport costs
+        // 1. Vehicle Cost (Check blocks or default)
+        const daySet = new Set(tripData.itinerary.map(b => b.dayNumber));
+        const totalDays = daySet.size || tripData.profile.durationDays || 1;
+
+        const defaultVehicle = masterData.transportProviders
+            .flatMap(p => p.transport_vehicles || [])
+            .find(v => v.id === tripData.defaultVehicleId);
+
+        // Calculate based on days (simplified for now)
+        if (defaultVehicle) {
+            trans += (defaultVehicle.day_rate || 0) * totalDays;
+        }
+
+        // 2. Driver Cost (only if NOT with_driver)
+        const vehicleIncludesDriver = defaultVehicle?.with_driver ?? false;
+        if (!vehicleIncludesDriver && tripData.defaultDriverId) {
+            const driver = masterData.drivers.find(d => d.id === tripData.defaultDriverId);
+            trans += (driver?.per_day_rate || 15) * totalDays;
+        }
+
         // Current block costs (Activities & Restaurants)
         tripData.itinerary.forEach(b => {
             if (b.type === 'activity' && b.vendorId) {
-                // Find vendor price if we have it in master data
                 const vendor = masterData.vendors.find(v => v.id === b.vendorId);
                 const actLink = vendor?.vendor_activities?.find(va => va.activity_id === b.activityId);
                 acts += actLink?.vendor_price || 0;
             }
             if (b.type === 'meal' && b.restaurantId) {
                 const rest = masterData.restaurants.find(r => r.id === b.restaurantId);
-                // Simple estimate based on pax
-                const pax = (tripData.profile.adults || 0) + (tripData.profile.children || 0);
-                acts += (rest?.lunch_rate_per_head || 25) * pax; // Default estimate
+                acts += (rest?.lunch_rate_per_head || 25) * pax;
             }
         });
 
-        return { hotels, activities: acts, transport: 0, total: hotels + acts };
-    }, [tripData.itinerary, tripData.accommodations, masterData, tripData.profile]);
+        return { hotels, activities: acts, transport: trans, total: hotels + acts + trans };
+    }, [tripData.itinerary, tripData.accommodations, masterData, tripData.profile, tripData.defaultDriverId, tripData.defaultVehicleId]);
 
-    const updateBlock = (id: string, field: keyof InternalItineraryBlock, value: any) => {
-        updateData({ itinerary: tripData.itinerary.map(b => b.id === id ? { ...b, [field]: value } : b) });
+    const updateBlock = (id: string, fields: Partial<InternalItineraryBlock>) => {
+        updateData({
+            itinerary: tripData.itinerary.map(b => b.id === id ? { ...b, ...fields } : b)
+        });
     };
 
     const moveBlock = (dayStr: string, index: number, direction: 'up' | 'down') => {
@@ -368,13 +390,15 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
         const block = tripData.itinerary.find(b => b.id === blockId);
         if (!block) return;
 
-        updateBlock(blockId, field, value);
+        const updates: Partial<TripData> = {
+            itinerary: tripData.itinerary.map(b => b.id === blockId ? { ...b, [field]: value } : b)
+        };
 
         // Sync logic for hotels
         if (field === 'hotelId' && block.type === 'sleep') {
             const hotel = masterData.hotels.find(h => h.id === value);
             if (hotel) {
-                const updatedAcc = tripData.accommodations.map(acc => {
+                updates.accommodations = tripData.accommodations.map(acc => {
                     if (acc.nightIndex === block.dayNumber) {
                         return {
                             ...acc,
@@ -386,12 +410,16 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                     }
                     return acc;
                 });
-                updateData({ accommodations: updatedAcc });
             }
         }
 
-        setActiveAssignment(null);
-        setSearchTerm("");
+        updateData(updates);
+
+        // Only close if not transport (transport needs vehicle/driver selection)
+        if (field !== 'transportId') {
+            setActiveAssignment(null);
+            setSearchTerm("");
+        }
     };
 
     const filteredMasterData = useMemo(() => {
@@ -424,10 +452,19 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
             const v = masterData.vendors.find(x => x.id === block.vendorId);
             return { name: v?.name || 'Linked Vendor', icon: <UserCheck size={12} className="text-orange-500" /> };
         }
-        if (block.type === 'travel' && (block.driverId || block.transportId)) {
+        if (block.type === 'travel' && (block.driverId || block.transportId || block.vehicleId)) {
             const d = masterData.drivers.find(x => x.id === block.driverId);
             const p = masterData.transportProviders.find(x => x.id === block.transportId);
-            return { name: d ? `${d.first_name} (Driver)` : p?.name || 'Linked Transport', icon: <CarIcon size={12} className="text-blue-500" /> };
+            const v = masterData.transportProviders
+                .flatMap(pv => pv.transport_vehicles || [])
+                .find(vh => vh.id === block.vehicleId);
+
+            let label = 'Linked Transport';
+            if (v) label = `${v.make_and_model || v.vehicle_type} (${v.vehicle_number})`;
+            else if (d) label = `${d.first_name} (Driver)`;
+            else if (p) label = p.name;
+
+            return { name: label, icon: <CarIcon size={12} className="text-blue-500" /> };
         }
         if (block.type === 'meal' && block.restaurantId) {
             const r = masterData.restaurants.find(x => x.id === block.restaurantId);
@@ -479,21 +516,78 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                 {tripData.itinerary.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center gap-4">
-                            <div className="p-2 bg-white rounded-lg shadow-sm"><CarIcon className="text-blue-500" size={18} /></div>
+                            <div className="p-2 bg-white rounded-lg shadow-sm"><Rocket className="text-blue-500" size={18} /></div>
                             <div className="flex-1">
-                                <p className="text-[10px] text-blue-600 uppercase font-bold">Trip Driver (Default)</p>
+                                <p className="text-[10px] text-blue-600 uppercase font-bold">Transport Provider</p>
                                 <select
                                     className="bg-transparent border-none text-xs font-bold focus:ring-0 p-0 w-full"
-                                    value={tripData.defaultDriverId || ''}
-                                    onChange={e => updateData({ defaultDriverId: e.target.value })}
+                                    value={tripData.defaultTransportId || ''}
+                                    onChange={e => updateData({ defaultTransportId: e.target.value, defaultVehicleId: '' })}
                                 >
                                     <option value="">Unassigned</option>
-                                    {masterData.drivers.map(d => (
-                                        <option key={d.id} value={d.id}>{d.first_name} {d.last_name || ''}</option>
+                                    {masterData.transportProviders.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
+
+                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center gap-4">
+                            <div className="p-2 bg-white rounded-lg shadow-sm"><CarIcon className="text-blue-500" size={18} /></div>
+                            <div className="flex-1">
+                                <p className="text-[10px] text-blue-600 uppercase font-bold">Trip Vehicle</p>
+                                <select
+                                    className="bg-transparent border-none text-xs font-bold focus:ring-0 p-0 w-full"
+                                    value={tripData.defaultVehicleId || ''}
+                                    onChange={e => {
+                                        const vid = e.target.value;
+                                        const vehicle = masterData.transportProviders
+                                            .flatMap(p => p.transport_vehicles || [])
+                                            .find(v => v.id === vid);
+
+                                        if (vehicle?.with_driver) {
+                                            updateData({ defaultVehicleId: vid, defaultDriverId: '' });
+                                        } else {
+                                            updateData({ defaultVehicleId: vid });
+                                        }
+                                    }}
+                                    disabled={!tripData.defaultTransportId}
+                                >
+                                    <option value="">Unassigned</option>
+                                    {masterData.transportProviders.find(p => p.id === tripData.defaultTransportId)?.transport_vehicles?.map(v => (
+                                        <option key={v.id} value={v.id}>{v.make_and_model || v.vehicle_type} ({v.vehicle_number})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center gap-4">
+                            <div className="p-2 bg-white rounded-lg shadow-sm"><UserCheck className="text-blue-500" size={18} /></div>
+                            <div className="flex-1">
+                                <p className="text-[10px] text-blue-600 uppercase font-bold">Trip Driver</p>
+                                {masterData.transportProviders
+                                    .flatMap(p => p.transport_vehicles || [])
+                                    .find(v => v.id === tripData.defaultVehicleId)?.with_driver ? (
+                                    <p className="text-[10px] text-neutral-400 font-bold uppercase mt-1">Included with Vehicle</p>
+                                ) : (
+                                    <select
+                                        className="bg-transparent border-none text-xs font-bold focus:ring-0 p-0 w-full"
+                                        value={tripData.defaultDriverId || ''}
+                                        onChange={e => updateData({ defaultDriverId: e.target.value })}
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {masterData.drivers.map(d => (
+                                            <option key={d.id} value={d.id}>{d.first_name} {d.last_name || ''}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {tripData.itinerary.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex items-center gap-4">
                             <div className="p-2 bg-white rounded-lg shadow-sm"><UserCheck className="text-amber-500" size={18} /></div>
                             <div className="flex-1">
@@ -544,9 +638,9 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                             <div key={block.id} className="bg-white rounded-2xl border border-neutral-100 p-4 shadow-sm hover:shadow-md hover:border-brand-gold/30 transition-all group flex flex-col md:flex-row gap-4 items-center">
                                                 <div className="flex items-center gap-4 flex-1 w-full">
                                                     <div className="w-20 text-center">
-                                                        <TimeInput value={block.startTime} onChange={v => updateBlock(block.id, 'startTime', v)} />
+                                                        <TimeInput value={block.startTime} onChange={v => updateBlock(block.id, { startTime: v })} />
                                                         <div className="h-4 w-[1px] bg-neutral-100 mx-auto my-1"></div>
-                                                        <TimeInput value={block.endTime} onChange={v => updateBlock(block.id, 'endTime', v)} />
+                                                        <TimeInput value={block.endTime} onChange={v => updateBlock(block.id, { endTime: v })} />
                                                     </div>
 
                                                     <div className="p-2.5 bg-neutral-50 rounded-xl">
@@ -555,7 +649,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
 
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2">
-                                                            <input value={block.name} onChange={e => updateBlock(block.id, 'name', e.target.value)} className="font-bold text-neutral-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                                                            <input value={block.name} onChange={e => updateBlock(block.id, { name: e.target.value })} className="font-bold text-neutral-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
                                                         </div>
                                                         {block.locationName && <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5"><MapPin size={10} /> {block.locationName}</p>}
                                                     </div>
@@ -641,25 +735,89 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                 {activeAssignment.type === 'travel' && (
                                     <>
                                         <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-b">Transport Providers</div>
-                                        {(filteredMasterData as any).providers?.map((tp: any) => (
-                                            <button key={tp.id} onClick={() => bindProvider(activeAssignment.blockId, 'transportId', tp.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
-                                                <div>
-                                                    <p className="font-bold text-sm text-neutral-800">{tp.name}</p>
-                                                    <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">Fleet Specialist</p>
-                                                </div>
-                                                <ChevronRight size={16} className="text-neutral-200 group-hover:text-brand-gold transform group-hover:translate-x-1 transition-all" />
-                                            </button>
+                                        {masterData.transportProviders.map((tp: any) => (
+                                            <div key={tp.id} className="border-b last:border-0">
+                                                <button onClick={() => bindProvider(activeAssignment.blockId, 'transportId', tp.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
+                                                    <div>
+                                                        <p className="font-bold text-sm text-neutral-800">{tp.name}</p>
+                                                        <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{tp.transport_vehicles?.length || 0} Vehicles Available</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.transportId === tp.id && <div className="w-2 h-2 bg-brand-gold rounded-full" />}
+                                                        <ChevronRight size={16} className="text-neutral-200 group-hover:text-brand-gold transform group-hover:translate-x-1 transition-all" />
+                                                    </div>
+                                                </button>
+
+                                                {/* Fleet Selection if provider is selected for this block */}
+                                                {tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.transportId === tp.id && tp.transport_vehicles && tp.transport_vehicles.length > 0 && (
+                                                    <div className="bg-neutral-50/50 p-2 space-y-1 pb-4 px-4 border-t border-neutral-100">
+                                                        <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Select Vehicle</p>
+                                                        {tp.transport_vehicles.map((v: any) => (
+                                                            <button
+                                                                key={v.id}
+                                                                onClick={() => {
+                                                                    const updates: Partial<InternalItineraryBlock> = { vehicleId: v.id };
+                                                                    if (v.with_driver) {
+                                                                        updates.driverId = undefined;
+                                                                    }
+                                                                    updateBlock(activeAssignment.blockId, updates);
+                                                                }}
+                                                                className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.vehicleId === v.id
+                                                                    ? 'bg-white border-brand-gold shadow-sm'
+                                                                    : 'bg-white/50 border-neutral-100 hover:border-neutral-200'
+                                                                    }`}
+                                                            >
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-neutral-800">{v.make_and_model || v.vehicle_type}</p>
+                                                                    <div className="flex gap-2 mt-1">
+                                                                        <span className="text-[9px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-bold uppercase">{v.vehicle_number}</span>
+                                                                        {v.with_driver && <span className="text-[9px] bg-green-100 px-1.5 py-0.5 rounded text-green-600 font-bold uppercase">Incl. Driver</span>}
+                                                                    </div>
+                                                                </div>
+                                                                {tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.vehicleId === v.id && (
+                                                                    <div className="w-5 h-5 bg-brand-gold rounded-full flex items-center justify-center">
+                                                                        <Check size={12} className="text-white" />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
-                                        <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-b border-t">Individual Drivers</div>
-                                        {(filteredMasterData as any).drivers?.map((d: any) => (
-                                            <button key={d.id} onClick={() => bindProvider(activeAssignment.blockId, 'driverId', d.id)} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
-                                                <div>
-                                                    <p className="font-bold text-sm text-neutral-800">{d.first_name} {d.last_name}</p>
-                                                    <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{d.phone}</p>
-                                                </div>
-                                                <ChevronRight size={16} className="text-neutral-200 group-hover:text-brand-gold transform group-hover:translate-x-1 transition-all" />
+
+                                        <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y">Segment Driver</div>
+                                        {masterData.transportProviders
+                                            .flatMap(p => p.transport_vehicles || [])
+                                            .find(v => v.id === tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.vehicleId)?.with_driver ? (
+                                            <div className="p-4 text-center">
+                                                <div className="inline-block p-2 bg-green-50 rounded-lg mb-2"><UserCheck size={20} className="text-green-500" /></div>
+                                                <p className="text-xs font-bold text-neutral-500 uppercase">Driver Included with Vehicle</p>
+                                            </div>
+                                        ) : (
+                                            masterData.drivers.map(d => (
+                                                <button key={d.id} onClick={() => updateBlock(activeAssignment.blockId, { driverId: d.id })} className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors text-left group">
+                                                    <div>
+                                                        <p className="font-bold text-sm text-neutral-800">{d.first_name} {d.last_name}</p>
+                                                        <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">Professional Chauffeur</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.driverId === d.id && <div className="w-2 h-2 bg-brand-gold rounded-full" />}
+                                                        <ChevronRight size={16} className="text-neutral-200 group-hover:text-brand-gold transform group-hover:translate-x-1 transition-all" />
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+
+                                        <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
+                                            <button
+                                                onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <CheckCircle2 size={18} />
+                                                Finish Assignment
                                             </button>
-                                        ))}
+                                        </div>
                                     </>
                                 )}
                                 {activeAssignment.type === 'meal' && (filteredMasterData as any[]).map(r => (
@@ -680,8 +838,31 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
 
                             <button
                                 onClick={() => {
-                                    const fields: (keyof InternalItineraryBlock)[] = ['hotelId', 'vendorId', 'transportId', 'driverId', 'restaurantId', 'guideId'];
-                                    fields.forEach(f => updateBlock(activeAssignment.blockId, f, undefined));
+                                    const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                    const fields: (keyof InternalItineraryBlock)[] = ['hotelId', 'vendorId', 'transportId', 'driverId', 'restaurantId', 'guideId', 'vehicleId'];
+                                    const blockUpdates: Partial<InternalItineraryBlock> = {};
+                                    fields.forEach(f => (blockUpdates as any)[f] = undefined);
+
+                                    const updates: Partial<TripData> = {
+                                        itinerary: tripData.itinerary.map(b => b.id === activeAssignment.blockId ? { ...b, ...blockUpdates } : b)
+                                    };
+
+                                    // Clear hotel sync if needed
+                                    if (block?.type === 'sleep') {
+                                        updates.accommodations = tripData.accommodations.map(acc => {
+                                            if (acc.nightIndex === block.dayNumber) {
+                                                return {
+                                                    ...acc,
+                                                    hotelId: undefined,
+                                                    hotelName: 'Not Assigned',
+                                                    address: ''
+                                                };
+                                            }
+                                            return acc;
+                                        });
+                                    }
+
+                                    updateData(updates);
                                     setActiveAssignment(null);
                                     setSearchTerm("");
                                 }}
