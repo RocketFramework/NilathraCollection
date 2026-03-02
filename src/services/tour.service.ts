@@ -330,7 +330,12 @@ export class TourService {
                     description: b.clientVisibleNotes || b.internalNotes || '',
                     time_start: b.startTime,
                     time_end: b.endTime,
-                    vendor_id: vendorId // Map to the resolved UUID
+                    vendor_id: vendorId, // Map to the resolved UUID
+                    activity_id: b.activityId,
+                    transport_id: b.transportId,
+                    driver_id: b.driverId || tripData.defaultDriverId || null,
+                    guide_id: b.guideId || tripData.defaultGuideId || null,
+                    restaurant_id: b.restaurantId
                 });
             }
 

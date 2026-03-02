@@ -27,6 +27,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
             } else {
                 setFormData({
                     first_name: "", last_name: "", phone: "", license_number: "", nic_number: "", is_suspended: false,
+                    per_day_rate: 15,
                     payment_details: {}
                 });
             }
@@ -114,11 +115,16 @@ export default function DriverFormModal({ isOpen, onClose, driver, onSave }: Dri
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">NIC Number</label>
                                 <input type="text" className="w-full outline-none text-brand-charcoal font-medium" value={formData.nic_number || ''} onChange={e => handleChange('nic_number', e.target.value)} />
                             </div>
-                            <div className="col-span-2 mt-2">
+                            <div className="col-span-2 sm:col-span-1 border border-neutral-200 rounded-xl px-4 py-2 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Per Day Rate ($)</label>
+                                <input type="number" className="w-full outline-none text-brand-charcoal font-medium" value={formData.per_day_rate ?? 15} onChange={e => handleChange('per_day_rate', e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                            </div>
+                            <div className="col-span-2 mt-2 flex items-center justify-between bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input type="checkbox" className="w-5 h-5 accent-red-500 rounded border-neutral-300" checked={formData.is_suspended || false} onChange={e => handleChange('is_suspended', e.target.checked)} />
                                     <span className="text-sm font-bold text-red-600 group-hover:text-red-700 transition-colors">Driver Suspended</span>
                                 </label>
+                                {formData.per_day_rate === undefined && <span className="text-[10px] text-neutral-400 font-bold uppercase">Default: $15.00</span>}
                             </div>
                         </div>
                     )}

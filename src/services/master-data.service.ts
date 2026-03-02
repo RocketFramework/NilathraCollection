@@ -58,6 +58,7 @@ export interface Driver {
     license_number?: string;
     nic_number?: string;
     is_suspended?: boolean;
+    per_day_rate?: number;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
 }

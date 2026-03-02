@@ -156,7 +156,17 @@ export interface InternalItineraryBlock {
     endTime: string; // HH:mm
     bufferMins: number; // buffer inserted
     durationHours: number;
-    linkedSupplierId?: string; // id of flight, hotel, transport, or activity
+
+    // Binding IDs (Relational Links)
+    hotelId?: string;
+    vendorId?: string;
+    activityId?: number;
+    transportId?: string;
+    driverId?: string;
+    guideId?: string;
+    restaurantId?: string;
+
+    linkedSupplierId?: string; // Legacy field - to be phased out or used as label
     confirmationStatus: 'Pending' | 'Confirmed';
     paymentStatus: 'Pending' | 'Paid';
     internalNotes: string;
@@ -191,6 +201,12 @@ export interface TripData {
     status: TripStatus;
     serviceScopes: ServiceScope[];
     profile: TripProfile;
+
+    // Default Trip-Wide Assignments
+    defaultDriverId?: string;
+    defaultGuideId?: string;
+    defaultTransportId?: string;
+
     flights: FlightBooking[];
     accommodations: AccommodationBooking[];
     transports: TransportBooking[];

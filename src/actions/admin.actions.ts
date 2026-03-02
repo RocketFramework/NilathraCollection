@@ -135,3 +135,66 @@ export async function deleteRestaurantAction(id: string) {
         return { error: error.message || "Failed to delete restaurant." };
     }
 }
+export async function getVendorsAction() {
+    try {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('vendors')
+            .select('*, payment_details(*), vendor_activities(*)')
+            .order('name');
+
+        if (error) throw error;
+        return { success: true, vendors: data };
+    } catch (error: any) {
+        console.error("Error fetching vendors:", error);
+        return { error: error.message || "Failed to load vendors." };
+    }
+}
+
+export async function getTransportProvidersAction() {
+    try {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('transport_providers')
+            .select('*, payment_details(*), transport_vehicles(*)')
+            .order('name');
+
+        if (error) throw error;
+        return { success: true, providers: data };
+    } catch (error: any) {
+        console.error("Error fetching transport providers:", error);
+        return { error: error.message || "Failed to load transport providers." };
+    }
+}
+
+export async function getDriversAction() {
+    try {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('drivers')
+            .select('*, payment_details(*)')
+            .order('first_name');
+
+        if (error) throw error;
+        return { success: true, drivers: data };
+    } catch (error: any) {
+        console.error("Error fetching drivers:", error);
+        return { error: error.message || "Failed to load drivers." };
+    }
+}
+
+export async function getTourGuidesAction() {
+    try {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from('tour_guides')
+            .select('*, payment_details(*)')
+            .order('first_name');
+
+        if (error) throw error;
+        return { success: true, guides: data };
+    } catch (error: any) {
+        console.error("Error fetching tour guides:", error);
+        return { error: error.message || "Failed to load tour guides." };
+    }
+}
