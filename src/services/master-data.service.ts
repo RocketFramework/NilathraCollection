@@ -162,10 +162,53 @@ export class MasterDataService {
     // ==========================================
     // Vendors CRUD
     // ==========================================
-    static async getVendors() {
-        const { data, error } = await supabase.from('vendors').select('*, payment_details(*), vendor_activities(*)').order('name');
-        if (error) throw error;
-        return data as Vendor[];
+    static async getVendors(client?: any) {
+        const supabaseClient = client || supabase;
+
+        try {
+            // 1. Fetch Vendors with basic joins
+            const { data: vendors, error: vError } = await supabaseClient
+                .from('vendors')
+                .select('*, payment_details(*)')
+                .order('name');
+
+            if (vError) throw vError;
+            if (!vendors) return [];
+
+            // 2. Fetch Vendor Activities along with Activity names separately
+            // This is more robust than complex nested joins across junction tables
+            const { data: vendorActivities, error: vaError } = await supabaseClient
+                .from('vendor_activities')
+                .select(`
+                    *,
+                    activities:activities (
+                        activity_name
+                    )
+                `);
+
+            if (vaError) {
+                console.error("Error fetching vendor_activities, returning vendors only:", vaError);
+                return vendors as Vendor[];
+            }
+
+            // 3. Join in memory
+            const mappedVendors = (vendors as any[]).map(v => ({
+                ...v,
+                vendor_activities: (vendorActivities || [])
+                    .filter((va: any) => va.vendor_id === v.id)
+                    .map((va: any) => ({
+                        ...va,
+                        activity_name: va.activities?.activity_name || va.name || 'Specific Activity'
+                    }))
+            }));
+
+            return mappedVendors as Vendor[];
+        } catch (err) {
+            console.error("Critical error in getVendors service:", err);
+            // Absolute fallback
+            const { data } = await supabaseClient.from('vendors').select('*').order('name');
+            return (data || []) as Vendor[];
+        }
     }
 
     static async getVendorsForActivity(activityId: number | string) {
@@ -438,8 +481,9 @@ export class MasterDataService {
     // ==========================================
     // Restaurants CRUD
     // ==========================================
-    static async getRestaurants() {
-        const { data, error } = await supabase.from('restaurants').select('*, payment_details(*)').order('name');
+    static async getRestaurants(client?: any) {
+        const supabaseClient = client || supabase;
+        const { data, error } = await supabaseClient.from('restaurants').select('*, payment_details(*)').order('name');
         if (error) throw error;
         return data as Restaurant[];
     }

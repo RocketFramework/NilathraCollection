@@ -162,6 +162,7 @@ export interface InternalItineraryBlock {
     vendorId?: string;
     activityId?: number;
     vendorActivityId?: string;
+    agreedPrice?: number;
     transportId?: string;
     vehicleId?: string;
     driverId?: string;

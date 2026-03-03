@@ -106,7 +106,8 @@ export async function getHotelsListAction() {
 }
 export async function getRestaurantsAction() {
     try {
-        const restaurants = await MasterDataService.getRestaurants();
+        const supabase = createAdminClient();
+        const restaurants = await MasterDataService.getRestaurants(supabase);
         return { success: true, restaurants };
     } catch (error: any) {
         console.error("Error fetching restaurants:", error);
@@ -138,13 +139,8 @@ export async function deleteRestaurantAction(id: string) {
 export async function getVendorsAction() {
     try {
         const supabase = createAdminClient();
-        const { data, error } = await supabase
-            .from('vendors')
-            .select('*, payment_details(*), vendor_activities(*)')
-            .order('name');
-
-        if (error) throw error;
-        return { success: true, vendors: data };
+        const vendors = await MasterDataService.getVendors(supabase);
+        return { success: true, vendors };
     } catch (error: any) {
         console.error("Error fetching vendors:", error);
         return { error: error.message || "Failed to load vendors." };
