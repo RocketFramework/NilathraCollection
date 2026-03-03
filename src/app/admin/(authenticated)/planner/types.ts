@@ -150,7 +150,7 @@ export interface ActivityBooking {
 export interface InternalItineraryBlock {
     id: string;
     dayNumber: number;
-    type: 'activity' | 'travel' | 'meal' | 'sleep' | 'train' | 'buffer' | 'wait' | 'custom';
+    type: 'activity' | 'travel' | 'meal' | 'sleep' | 'train' | 'buffer' | 'wait' | 'guide' | 'custom';
     name: string;
     startTime: string; // HH:mm
     endTime: string; // HH:mm

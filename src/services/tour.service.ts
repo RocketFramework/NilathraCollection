@@ -308,20 +308,24 @@ export class TourService {
             const activitiesToInsert = [];
 
             for (const b of blocks) {
-                let vendorId = null;
-                if (b.linkedSupplierId && typeof b.linkedSupplierId === 'string' && !b.linkedSupplierId.includes('-')) {
-                    // Looks like a name, not a UUID, let's try to grab the real UUID
-                    const { data: vendorMatches } = await supabaseAdmin
-                        .from('vendors')
-                        .select('id')
-                        .ilike('name', b.linkedSupplierId)
-                        .limit(1);
+                // Prioritize the new vendorId field, fallback to linkedSupplierId for legacy or name-based resolution
+                let vendorId = b.vendorId || null;
 
-                    if (vendorMatches && vendorMatches.length > 0) {
-                        vendorId = vendorMatches[0].id;
+                if (!vendorId && b.linkedSupplierId && typeof b.linkedSupplierId === 'string') {
+                    if (!b.linkedSupplierId.includes('-')) {
+                        // Looks like a name, not a UUID, let's try to grab the real UUID
+                        const { data: vendorMatches } = await supabaseAdmin
+                            .from('vendors')
+                            .select('id')
+                            .ilike('name', b.linkedSupplierId)
+                            .limit(1);
+
+                        if (vendorMatches && vendorMatches.length > 0) {
+                            vendorId = vendorMatches[0].id;
+                        }
+                    } else {
+                        vendorId = b.linkedSupplierId; // Trust it's a UUID
                     }
-                } else if (b.linkedSupplierId && typeof b.linkedSupplierId === 'string') {
-                    vendorId = b.linkedSupplierId; // Trust it's a UUID
                 }
 
                 activitiesToInsert.push({

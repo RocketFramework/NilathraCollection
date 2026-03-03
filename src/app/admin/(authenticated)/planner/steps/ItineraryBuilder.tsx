@@ -5,7 +5,7 @@ import {
     ListTree, MapPin, CalendarDays, Navigation, Utensils, BedDouble, AlertCircle, GripVertical,
     Rocket, RefreshCcw, ArrowUp, ArrowDown, Activity as ActivityIcon, ChevronLeft, ChevronRight,
     Trash2, Link, Link2Off, UserCheck, ShieldCheck, Car as CarIcon, Coffee, Info, Calculator,
-    CheckCircle2, AlertTriangle, Search, X, Check, XCircle
+    CheckCircle2, AlertTriangle, Search, X, Check, XCircle, PlusCircle
 } from "lucide-react";
 import { generateRoutePlan, GeoLocation } from "@/lib/route-engine";
 import { useState, useEffect, useMemo } from "react";
@@ -363,12 +363,52 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
         updateData({ itinerary: updatedItinerary, accommodations: updatedHotels });
     };
 
+    const addNewBlock = (dayNumber: number, type: InternalItineraryBlock['type'] = 'activity') => {
+        const dayBlocks = tripData.itinerary
+            .filter(b => b.dayNumber === dayNumber)
+            .sort((a, b) => timeToMins(a.endTime) - timeToMins(b.endTime));
+
+        let startTime = "09:00";
+        if (dayBlocks.length > 0) {
+            startTime = dayBlocks[dayBlocks.length - 1].endTime;
+        }
+
+        const typeNames: Record<string, string> = {
+            'activity': 'New Activity',
+            'travel': 'New Transport',
+            'meal': 'New Meal',
+            'sleep': 'New Hotel Stay',
+            'guide': 'Guided Segment',
+            'custom': 'Custom Block'
+        };
+
+        const newBlock: InternalItineraryBlock = {
+            id: crypto.randomUUID(),
+            dayNumber,
+            type,
+            name: typeNames[type as string] || 'New Block',
+            startTime,
+            endTime: shiftTime(startTime, 60),
+            bufferMins: 15,
+            durationHours: 1,
+            confirmationStatus: 'Pending',
+            paymentStatus: 'Pending',
+            internalNotes: '',
+            clientVisibleNotes: ''
+        };
+
+        updateData({
+            itinerary: [...tripData.itinerary, newBlock]
+        });
+    };
+
     const iconType = (type: string) => {
         switch (type) {
             case 'activity': return <ActivityIcon size={16} className="text-orange-500" />;
             case 'travel': return <Navigation size={16} className="text-blue-500" />;
             case 'meal': return <Utensils size={16} className="text-green-500" />;
             case 'sleep': return <BedDouble size={16} className="text-indigo-500" />;
+            case 'guide': return <UserCheck size={16} className="text-amber-500" />;
             default: return <ListTree size={16} className="text-neutral-500" />;
         }
     };
@@ -483,6 +523,10 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
             else if (p) label = p.name;
 
             return { name: label, icon: <CarIcon size={12} className="text-blue-500" /> };
+        }
+        if (block.type === 'guide' && block.guideId) {
+            const g = masterData.guides.find(x => x.id === block.guideId);
+            return { name: g ? `${g.first_name} ${g.last_name}` : 'Linked Guide', icon: <UserCheck size={12} className="text-amber-500" /> };
         }
         if (block.type === 'meal' && block.restaurantId) {
             const r = masterData.restaurants.find(x => x.id === block.restaurantId);
@@ -639,71 +683,109 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                     </div>
                 ) : (
                     <div className="space-y-10">
-                        {Object.entries(days).sort(([a], [b]) => Number(a) - Number(b)).map(([dayStr, blocks]) => (
-                            <div key={dayStr} className="group/day relative pl-8 border-l-2 border-neutral-100 ml-4 pb-4">
-                                <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-brand-gold border-4 border-white shadow-sm flex items-center justify-center text-[10px] text-white font-bold">
-                                    {dayStr}
-                                </div>
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-lg font-serif text-brand-charcoal font-bold tracking-tight">Day {dayStr} Journey</h4>
-                                    <button onClick={() => removeDay(dayStr)} className="text-neutral-300 hover:text-red-500 transition-colors opacity-0 group-hover/day:opacity-100 font-bold text-[10px] uppercase tracking-widest">Remove Day</button>
-                                </div>
+                        {Object.entries(days).sort(([a], [b]) => Number(a) - Number(b)).map(([dayStr, blocks]) => {
+                            const dayNum = Number(dayStr);
+                            let actualDate = "";
+                            if (tripData.profile.arrivalDate) {
+                                try {
+                                    const date = new Date(tripData.profile.arrivalDate);
+                                    date.setDate(date.getDate() + (dayNum - 1));
+                                    actualDate = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                                } catch (e) {
+                                    console.error("Error calculating date:", e);
+                                }
+                            }
 
-                                <div className="grid gap-3">
-                                    {blocks.map((block, idx) => {
-                                        const binding = getBindingDisplay(block);
-                                        return (
-                                            <div key={block.id} className="bg-white rounded-2xl border border-neutral-100 p-4 shadow-sm hover:shadow-md hover:border-brand-gold/30 transition-all group flex flex-col md:flex-row gap-4 items-center">
-                                                <div className="flex items-center gap-4 flex-1 w-full">
-                                                    <div className="w-20 text-center">
-                                                        <TimeInput value={block.startTime} onChange={v => updateBlock(block.id, { startTime: v })} />
-                                                        <div className="h-4 w-[1px] bg-neutral-100 mx-auto my-1"></div>
-                                                        <TimeInput value={block.endTime} onChange={v => updateBlock(block.id, { endTime: v })} />
-                                                    </div>
+                            return (
+                                <div key={dayStr} className="group/day relative pl-8 border-l-2 border-neutral-100 ml-4 pb-4">
+                                    <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-brand-gold border-4 border-white shadow-sm flex items-center justify-center text-[10px] text-white font-bold">
+                                        {dayStr}
+                                    </div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h4 className="text-lg font-serif text-brand-charcoal font-bold tracking-tight">
+                                            Day {dayStr} {actualDate && <span className="text-sm font-sans text-neutral-400 font-normal ml-2">({actualDate})</span>} Journey
+                                        </h4>
+                                        <button onClick={() => removeDay(dayStr)} className="text-neutral-300 hover:text-red-500 transition-colors opacity-0 group-hover/day:opacity-100 font-bold text-[10px] uppercase tracking-widest">Remove Day</button>
+                                    </div>
 
-                                                    <div className="p-2.5 bg-neutral-50 rounded-xl">
-                                                        {iconType(block.type)}
-                                                    </div>
-
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <input value={block.name} onChange={e => updateBlock(block.id, { name: e.target.value })} className="font-bold text-neutral-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                                    <div className="grid gap-3">
+                                        {blocks.map((block, idx) => {
+                                            const binding = getBindingDisplay(block);
+                                            return (
+                                                <div key={block.id} className="bg-white rounded-2xl border border-neutral-100 p-4 shadow-sm hover:shadow-md hover:border-brand-gold/30 transition-all group flex flex-col md:flex-row gap-4 items-center">
+                                                    <div className="flex items-center gap-4 flex-1 w-full">
+                                                        <div className="w-20 text-center">
+                                                            <TimeInput value={block.startTime} onChange={v => updateBlock(block.id, { startTime: v })} />
+                                                            <div className="h-4 w-[1px] bg-neutral-100 mx-auto my-1"></div>
+                                                            <TimeInput value={block.endTime} onChange={v => updateBlock(block.id, { endTime: v })} />
                                                         </div>
-                                                        {block.locationName && <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5"><MapPin size={10} /> {block.locationName}</p>}
+
+                                                        <div className="p-2.5 bg-neutral-50 rounded-xl">
+                                                            {iconType(block.type)}
+                                                        </div>
+
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <input value={block.name} onChange={e => updateBlock(block.id, { name: e.target.value })} className="font-bold text-neutral-800 bg-transparent border-none p-0 focus:ring-0 w-full" />
+                                                            </div>
+                                                            {block.locationName && <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5"><MapPin size={10} /> {block.locationName}</p>}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 w-full md:w-auto">
+                                                        {binding ? (
+                                                            <button
+                                                                onClick={() => setActiveAssignment({ blockId: block.id, type: block.type })}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-brand-gold/5 border border-brand-gold/20 rounded-full text-[11px] font-bold text-brand-gold hover:bg-brand-gold/10 transition-colors"
+                                                            >
+                                                                {binding.icon}
+                                                                <span className="truncate max-w-[180px]" title={binding.name}>{binding.name}</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setActiveAssignment({ blockId: block.id, type: block.type })}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-50 border border-neutral-100 rounded-full text-[11px] font-bold text-neutral-400 hover:bg-neutral-100 transition-colors"
+                                                            >
+                                                                <Link size={12} />
+                                                                Bind Provider
+                                                            </button>
+                                                        )}
+
+                                                        <div className="flex gap-1">
+                                                            <button onClick={() => removeBlock(block.id, block.dayNumber)} className="p-1.5 text-neutral-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            );
+                                        })}
 
-                                                <div className="flex items-center gap-3 w-full md:w-auto">
-                                                    {binding ? (
-                                                        <button
-                                                            onClick={() => setActiveAssignment({ blockId: block.id, type: block.type })}
-                                                            className="flex items-center gap-2 px-3 py-1.5 bg-brand-gold/5 border border-brand-gold/20 rounded-full text-[11px] font-bold text-brand-gold hover:bg-brand-gold/10 transition-colors"
-                                                        >
-                                                            {binding.icon}
-                                                            <span className="truncate max-w-[120px]" title={binding.name}>{binding.name}</span>
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => setActiveAssignment({ blockId: block.id, type: block.type })}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-50 border border-neutral-100 rounded-full text-[11px] font-bold text-neutral-400 hover:bg-neutral-100 transition-colors"
-                                                        >
-                                                            <Link size={12} />
-                                                            Bind Provider
-                                                        </button>
-                                                    )}
-
-                                                    <div className="flex gap-1">
-                                                        <button onClick={() => moveBlock(dayStr, idx, 'up')} className="p-1.5 text-neutral-300 hover:text-brand-gold opacity-0 group-hover:opacity-100"><ArrowUp size={14} /></button>
-                                                        <button onClick={() => moveBlock(dayStr, idx, 'down')} className="p-1.5 text-neutral-300 hover:text-brand-gold opacity-0 group-hover:opacity-100"><ArrowDown size={14} /></button>
-                                                        <button onClick={() => removeBlock(block.id, block.dayNumber)} className="p-1.5 text-neutral-200 hover:text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
-                                                    </div>
-                                                </div>
+                                        <div className="mt-4 p-4 border-2 border-dashed border-neutral-100 rounded-[32px] bg-neutral-50/30">
+                                            <p className="text-[10px] text-center font-bold text-neutral-400 uppercase tracking-[0.2em] mb-4">Manual Addition • Day {dayStr}</p>
+                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                                {[
+                                                    { type: 'activity', label: 'Activity', icon: <ActivityIcon size={14} />, color: 'orange' },
+                                                    { type: 'sleep', label: 'Stay', icon: <BedDouble size={14} />, color: 'indigo' },
+                                                    { type: 'travel', label: 'Journey', icon: <Navigation size={14} />, color: 'blue' },
+                                                    { type: 'meal', label: 'Meal', icon: <Utensils size={14} />, color: 'green' },
+                                                    { type: 'guide', label: 'Guide', icon: <UserCheck size={14} />, color: 'amber' },
+                                                    { type: 'custom', label: 'Other', icon: <PlusCircle size={14} />, color: 'neutral' },
+                                                ].map((btn) => (
+                                                    <button
+                                                        key={btn.type}
+                                                        onClick={() => addNewBlock(Number(dayStr), btn.type as any)}
+                                                        className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white border border-neutral-100 hover:border-brand-gold/50 hover:shadow-sm transition-all group"
+                                                    >
+                                                        <div className={`text-${btn.color}-500 group-hover:scale-110 transition-transform`}>
+                                                            {btn.icon}
+                                                        </div>
+                                                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-tight">{btn.label}</span>
+                                                    </button>
+                                                ))}
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 )}
             </div>
@@ -785,9 +867,11 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                         }`}
                                                                 >
                                                                     <div>
-                                                                        <p className="text-xs font-bold text-neutral-800 truncate max-w-[240px]" title={activityLabel}>{activityLabel}</p>
-                                                                        <div className="flex gap-2 mt-1">
-                                                                            <span className="text-[9px] bg-brand-gold/10 px-1.5 py-0.5 rounded text-brand-gold font-bold">LKR {va.vendor_price?.toLocaleString() || 0}</span>
+                                                                        <p className="text-xs font-bold text-neutral-800 truncate max-w-[240px]" title={activityLabel}>
+                                                                            {activityLabel}
+                                                                        </p>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-[10px] bg-brand-gold text-white px-2 py-0.5 rounded-full font-black">LKR {va.vendor_price?.toLocaleString() || 0}</span>
                                                                         </div>
                                                                     </div>
                                                                     {isSelected && (

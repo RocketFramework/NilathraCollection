@@ -196,10 +196,17 @@ export class MasterDataService {
                 ...v,
                 vendor_activities: (vendorActivities || [])
                     .filter((va: any) => va.vendor_id === v.id)
-                    .map((va: any) => ({
-                        ...va,
-                        activity_name: va.activities?.activity_name || va.name || 'Specific Activity'
-                    }))
+                    .map((va: any) => {
+                        const actData = va.activities || va.activity;
+                        const actName = Array.isArray(actData)
+                            ? actData[0]?.activity_name
+                            : actData?.activity_name;
+
+                        return {
+                            ...va,
+                            activity_name: actName || va.name || 'Specific Activity'
+                        };
+                    })
             }));
 
             return mappedVendors as Vendor[];
