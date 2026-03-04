@@ -894,21 +894,28 @@ export function FinanceAndBookingStep({
                     }
 
                     /* Shrink specific elements for print */
-                    #po-print-only h1 { font-size: 24pt !important; }
-                    #po-print-only h2 { font-size: 18pt !important; }
-                    #po-print-only h3 { font-size: 9pt !important; margin-bottom: 0.5rem !important; }
-                    #po-print-only .p-12, #po-print-only .p-16 { padding: 1.5rem !important; }
-                    #po-print-only .gap-12 { gap: 1.5rem !important; }
-                    #po-print-only .gap-8 { gap: 1rem !important; }
-                    #po-print-only .py-12 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-                    #po-print-only .pt-16 { padding-top: 1rem !important; }
-                    #po-print-only .py-6 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
-                    #po-print-only .space-y-12 > * + * { margin-top: 1.5rem !important; }
-                    #po-print-only .space-y-6 > * + * { margin-top: 0.5rem !important; }
-                    #po-print-only .space-y-4 > * + * { margin-top: 0.3rem !important; }
-                    #po-print-only .rounded-[32px], #po-print-only .rounded-[40px] { border-radius: 12px !important; }
-                    #po-print-only table { font-size: 8.5pt !important; }
-                    #po-print-only .w-20 { width: 3.5rem !important; height: 3.5rem !important; }
+                    #po-print-only h1 { font-size: 9pt !important; line-height: 1 !important; }
+                    #po-print-only h2 { font-size: 9pt !important; line-height: 1 !important; }
+                    #po-print-only h3 { font-size: 7pt !important; margin-bottom: 0.1rem !important; }
+                    #po-print-only .p-12, #po-print-only .p-16 { padding: 1rem !important; }
+                    #po-print-only .gap-12 { gap: 1rem !important; }
+                    #po-print-only .gap-4 { gap: 0.5rem !important; }
+                    #po-print-only .py-12 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+                    #po-print-only .pt-16 { padding-top: 0.5rem !important; }
+                    #po-print-only .py-6 { padding-top: 0.2rem !important; padding-bottom: 0.2rem !important; }
+                    #po-print-only .space-y-12 > * + * { margin-top: 1rem !important; }
+                    #po-print-only .space-y-4 > * + * { margin-top: 0.1rem !important; }
+                    #po-print-only .rounded-[32px], #po-print-only .rounded-[40px], #po-print-only .rounded-3xl { border-radius: 2px !important; }
+                    #po-print-only table { font-size: 7pt !important; }
+                    #po-print-only .w-10 { width: 1.5rem !important; height: 1.5rem !important; }
+                    #po-print-only .w-14 { width: 2rem !important; height: 2rem !important; }
+                    
+                    /* Force strict horizontal header and columns */
+                    #po-print-only .grid { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
+                    #po-print-only .flex-col, #po-print-only .flex-row { flex-direction: row !important; align-items: center !important; }
+                    #po-print-only .items-start { align-items: center !important; }
+                    #po-print-only .min-w-[280px], #po-print-only .min-w-[200px] { min-width: 0 !important; width: auto !important; }
+                    #po-print-only .gap-4, #po-print-only .gap-2, #po-print-only .gap-3 { gap: 0.25rem !important; }
                     
                     /* Force color printing and clean layout */
                     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -929,13 +936,13 @@ function renderPOContent(po: DBPurchaseOrder & { items: DBPurchaseOrderItem[] })
     return (
         <>
             {/* Document Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-                <div className="flex items-start gap-6">
-                    <img src="/images/nilathra_travels_logo.jpeg" alt="Nilathra Travels" className="w-20 h-20 object-contain rounded-2xl border border-neutral-100 shadow-sm" />
+            <div className="flex flex-row justify-between items-center gap-2 border-b border-neutral-100 pb-4">
+                <div className="flex items-center gap-3">
+                    <img src="/images/nilathra_travels_logo.jpeg" alt="Nilathra Travels" className="w-10 h-10 object-contain rounded-lg" />
                     <div className="space-y-4">
-                        <div className="space-y-1">
-                            <h1 className="text-4xl font-serif font-black text-brand-charcoal tracking-tight">Nilathra Travels</h1>
-                            <p className="text-xs font-bold text-brand-gold uppercase tracking-[0.3em]">By Nilathra Hotel Management (Pvt) Ltd</p>
+                        <div className="space-y-0 text-left">
+                            <h1 className="text-sm font-serif font-black text-brand-charcoal tracking-tight leading-none uppercase">Nilathra Travels</h1>
+                            <p className="text-[7px] font-bold text-brand-gold uppercase tracking-tight leading-none">By Nilathra Hotel Management (Pvt) Ltd</p>
                         </div>
                         <div className="text-sm text-neutral-500 leading-relaxed font-medium">
                             <p>145, Wajira Road, Colombo 05,</p>
@@ -944,20 +951,20 @@ function renderPOContent(po: DBPurchaseOrder & { items: DBPurchaseOrderItem[] })
                         </div>
                     </div>
                 </div>
-                <div className="bg-neutral-50 p-6 md:p-8 rounded-[32px] border border-neutral-100 min-w-[280px]">
-                    <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-4">Purchase Order</h2>
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-xs">
+                <div className="bg-neutral-50 p-4 md:p-6 rounded-lg border border-neutral-100 min-w-[200px]">
+                    <h2 className="text-xl font-serif font-bold text-brand-charcoal mb-2">Purchase Order</h2>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-[8px]">
                             <span className="text-neutral-400 font-bold uppercase tracking-widest">PO Number</span>
                             <span className="font-mono font-bold text-brand-charcoal">{po.po_number}</span>
                         </div>
-                        <div className="flex justify-between text-xs border-t border-neutral-200 pt-3">
+                        <div className="flex justify-between text-[8px] border-t border-neutral-200 pt-2">
                             <span className="text-neutral-400 font-bold uppercase tracking-widest">Issue Date</span>
                             <span className="font-bold text-brand-charcoal">{po.po_date}</span>
                         </div>
-                        <div className="flex justify-between text-xs border-t border-neutral-200 pt-3">
+                        <div className="flex justify-between text-[8px] border-t border-neutral-200 pt-2">
                             <span className="text-neutral-400 font-bold uppercase tracking-widest">Status</span>
-                            <span className={`px-2 py-0.5 rounded-full font-black uppercase text-[8px] tracking-tighter
+                            <span className={`px-1.5 py-0.5 rounded-full font-black uppercase text-[7px] tracking-tighter
                                 ${po.status === 'Draft' ? 'bg-neutral-100 text-neutral-500' :
                                     po.status === 'Sent' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                                 {po.status}
@@ -968,7 +975,7 @@ function renderPOContent(po: DBPurchaseOrder & { items: DBPurchaseOrderItem[] })
             </div>
 
             {/* Vendor & Trip Reference */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-b border-neutral-100 py-12">
+            <div className="grid grid-cols-2 gap-6 border-t border-b border-neutral-100 py-6">
                 <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em]">Supplier Information</h3>
                     <div className="space-y-1">
