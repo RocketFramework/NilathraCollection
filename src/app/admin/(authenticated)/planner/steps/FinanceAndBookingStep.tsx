@@ -139,6 +139,9 @@ export function FinanceAndBookingStep({
 
             tripData.itinerary.forEach(block => {
                 if (preservedLinkedBlockIds.has(block.id)) return; // Skip items already in a confirmed or sent PO
+
+                const totalPax = (tripData.profile.adults || 0) + (tripData.profile.children || 0);
+
                 let vendorId = '';
                 let vendorName = '';
                 let vendorType: DBPurchaseOrder['vendor_type'] = 'other';
@@ -167,6 +170,21 @@ export function FinanceAndBookingStep({
                     mlPlan = acc?.mealPlan || 'BB';
                     price = acc?.pricePerNight || 0;
                     qty = acc?.numberOfRooms || 1;
+
+                    // Smart Room Count: If totalPax is high and user hasn't explicitly set more rooms, 
+                    // calculate based on capacity (Double=2, Triple=3, Single=1)
+                    if (totalPax > 1 && qty <= 1) {
+                        let capacity = 2; // Default to Double/Twin
+                        const cfg = roomConfig.toLowerCase();
+                        if (cfg.includes('triple')) capacity = 3;
+                        else if (cfg.includes('single')) capacity = 1;
+                        else if (cfg.includes('quad')) capacity = 4;
+
+                        const suggestedRooms = Math.ceil(totalPax / capacity);
+                        if (suggestedRooms > qty) {
+                            qty = suggestedRooms;
+                        }
+                    }
                 } else if (block.type === 'activity' && block.vendorId) {
                     const vendor = vendors.find((v: any) => v.id === block.vendorId);
                     vendorId = block.vendorId;
@@ -176,6 +194,8 @@ export function FinanceAndBookingStep({
                     vendorPhone = vendor?.phone || '';
                     vendorEmail = vendor?.email || '';
                     vendorType = 'vendor';
+                    qty = totalPax;
+                    price = block.agreedPrice || 0;
                 } else if (block.type === 'travel' && block.transportId) {
                     const provider = transports.find((t: any) => t.id === block.transportId);
                     vendorId = block.transportId;
@@ -229,7 +249,8 @@ export function FinanceAndBookingStep({
                     room_type: roomConfig,
                     meal_plan: mlPlan,
                     unit_price: price * exchangeRate,
-                    vehicle_type: vhType
+                    vehicle_type: vhType,
+                    number_of_guests: totalPax
                 };
 
                 // Add hotel specific dates if applicable
@@ -512,7 +533,10 @@ export function FinanceAndBookingStep({
                                                         <div className="flex justify-between items-center">
                                                             <div className="flex items-center gap-2 overflow-hidden">
                                                                 {item.day_number && (
-                                                                    <span className="shrink-0 text-[8px] bg-neutral-200 text-neutral-600 px-1.5 py-0.5 rounded font-black uppercase">Day {item.day_number}</span>
+                                                                    <span className="shrink-0 text-[8px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded font-black uppercase">Day {item.day_number}</span>
+                                                                )}
+                                                                {item.service_date && (
+                                                                    <span className="shrink-0 text-[8px] text-brand-gold font-bold font-mono">{item.service_date}</span>
                                                                 )}
                                                                 <span className="text-xs font-bold text-neutral-700 truncate">{item.description}</span>
                                                             </div>
