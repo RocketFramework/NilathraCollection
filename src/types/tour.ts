@@ -179,6 +179,8 @@ export interface InternalItineraryBlock {
     lng?: number;
     serviceProvider?: string;
     mealType?: string;
+    transportRateType?: 'day' | 'km';
+    transportQuantity?: number;
 }
 
 export interface TripData {
