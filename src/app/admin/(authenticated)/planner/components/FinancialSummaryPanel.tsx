@@ -49,7 +49,7 @@ export function FinancialSummaryPanel({ tripData, updateFinancials }: { tripData
                                     <span className="text-neutral-400">Rs.</span>
                                     <input
                                         type="number"
-                                        value={val || ''}
+                                        value={(val as number) || ''}
                                         onChange={(e) => handleCostChange(key as keyof Financials['costs'], e.target.value)}
                                         className="w-24 text-right px-2 py-1 border rounded focus:ring-1 focus:ring-brand-gold"
                                     />

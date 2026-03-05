@@ -1202,12 +1202,12 @@ export function FinanceAndBookingStep({
                                             <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-tight mb-2">PO Status</p>
                                             <div className="flex flex-wrap gap-2">
                                                 {editingPO?.status === 'Draft' && (
-                                                    <button onClick={() => editingPO && updateLocalPOStatus( 'Sent')} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+                                                    <button onClick={() => editingPO && updateLocalPOStatus('Sent')} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
                                                         <Send size={12} /> Issue PO
                                                     </button>
                                                 )}
                                                 {editingPO?.status === 'Sent' && (
-                                                    <button onClick={() => editingPO && updateLocalPOStatus( 'Accepted')} className="flex-1 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-bold uppercase hover:bg-green-100 transition-colors flex items-center justify-center gap-2">
+                                                    <button onClick={() => editingPO && updateLocalPOStatus('Accepted')} className="flex-1 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-bold uppercase hover:bg-green-100 transition-colors flex items-center justify-center gap-2">
                                                         <Check size={12} /> Confirm Accept
                                                     </button>
                                                 )}
@@ -1220,6 +1220,52 @@ export function FinanceAndBookingStep({
                                                     <p className="text-xs font-bold text-neutral-700 w-full text-center py-2">{editingPO?.status}</p>
                                                 )}
                                             </div>
+
+                                            {/* Tracking Fields based on Status */}
+                                            {editingPO?.status === 'Sent' && (
+                                                <div className="mt-4 space-y-2 border-t border-neutral-200/60 pt-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] text-neutral-400 uppercase font-black">Sent To Name</label>
+                                                        <input
+                                                            value={editingPO?.sent_to_name || ""}
+                                                            onChange={(e) => setEditingPO(prev => prev ? { ...prev, sent_to_name: e.target.value } : null)}
+                                                            className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-1 focus:ring-brand-gold"
+                                                            placeholder="Contact Person"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] text-neutral-400 uppercase font-black">Sent Email</label>
+                                                        <input
+                                                            value={editingPO?.sent_email || ""}
+                                                            onChange={(e) => setEditingPO(prev => prev ? { ...prev, sent_email: e.target.value } : null)}
+                                                            className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-1 focus:ring-brand-gold"
+                                                            placeholder="example@vendor.com"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {editingPO?.status === 'Accepted' && (
+                                                <div className="mt-4 space-y-2 border-t border-neutral-200/60 pt-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] text-neutral-400 uppercase font-black">Accepted By Name</label>
+                                                        <input
+                                                            value={editingPO?.accepted_by_name || ""}
+                                                            onChange={(e) => setEditingPO(prev => prev ? { ...prev, accepted_by_name: e.target.value } : null)}
+                                                            className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-1 focus:ring-brand-gold"
+                                                            placeholder="Vendor Representative"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] text-neutral-400 uppercase font-black">Accepted Date</label>
+                                                        <input
+                                                            type="date"
+                                                            value={editingPO?.accepted_date ? editingPO.accepted_date.split('T')[0] : ""}
+                                                            onChange={(e) => setEditingPO(prev => prev ? { ...prev, accepted_date: e.target.value ? new Date(e.target.value).toISOString() : undefined } : null)}
+                                                            className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-1 focus:ring-brand-gold"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-4 bg-neutral-50 rounded-[24px] border border-neutral-100 flex items-center justify-center">
                                             <button onClick={() => editingPO && setPreviewPO(editingPO)} className="w-full h-full flex flex-col items-center justify-center gap-2 text-brand-gold hover:text-yellow-600 transition-colors">
@@ -1341,7 +1387,7 @@ export function FinanceAndBookingStep({
                                                         ) : (
                                                             <input
                                                                 value={item.description}
-                                                                onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                onChange={(e) => updateLocalPOItem(item.id, { description: e.target.value })}
                                                                 className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                                 placeholder="Item Description"
                                                             />
@@ -1352,7 +1398,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="date"
                                                             value={item.service_date || ""}
-                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { service_date: e.target.value })}
+                                                            onChange={(e) => updateLocalPOItem(item.id, { service_date: e.target.value })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                         />
                                                     </div>
@@ -1361,7 +1407,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="number"
                                                             value={item.quantity}
-                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { quantity: Number(e.target.value) })}
+                                                            onChange={(e) => updateLocalPOItem(item.id, { quantity: Number(e.target.value) })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-center"
                                                         />
                                                     </div>
@@ -1370,7 +1416,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="number"
                                                             value={item.unit_price}
-                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { unit_price: Number(e.target.value) })}
+                                                            onChange={(e) => updateLocalPOItem(item.id, { unit_price: Number(e.target.value) })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-right"
                                                         />
                                                     </div>
