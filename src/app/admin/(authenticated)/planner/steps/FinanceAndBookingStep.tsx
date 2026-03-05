@@ -28,6 +28,8 @@ export function FinanceAndBookingStep({
 }) {
 
     const [activePOId, setActivePOId] = useState<string | null>(null);
+    const [editingPO, setEditingPO] = useState<DBPurchaseOrder | null>(null);
+    const [isSavingPO, setIsSavingPO] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [dbPOs, setDbPOs] = useState<DBPurchaseOrder[]>([]);
     const [isLoadingPOs, setIsLoadingPOs] = useState(false);
@@ -456,6 +458,52 @@ export function FinanceAndBookingStep({
         }
     };
 
+
+    const openPODrawer = (poId: string, poObj?: any) => {
+        setActivePOId(poId);
+        if (poObj) {
+            setEditingPO(JSON.parse(JSON.stringify(poObj)));
+        } else {
+            const po = dbPOs.find(p => p.id === poId);
+            if (po) setEditingPO(JSON.parse(JSON.stringify(po)));
+        }
+    };
+
+    const closePODrawer = () => {
+        setActivePOId(null);
+        setEditingPO(null);
+    };
+
+    const saveEditedPO = async () => {
+        if (!editingPO) return;
+        setIsSavingPO(true);
+        try {
+            await savePurchaseOrderAction(editingPO, editingPO.items || []);
+            await loadPOs();
+            alert("Purchase Order Saved Successfully.");
+        } catch (error) {
+            console.error("Failed to save PO", error);
+            alert("Failed to save Purchase Order.");
+        } finally {
+            setIsSavingPO(false);
+        }
+    };
+
+    const updateLocalPOStatus = async (newStatus: POStatus) => {
+        if (!editingPO) return;
+        const updated = { ...editingPO, status: newStatus };
+        setEditingPO(updated);
+        setIsSavingPO(true);
+        try {
+            await savePurchaseOrderAction(updated, updated.items || []);
+            await loadPOs();
+        } catch (error) {
+            console.error("Failed to update status", error);
+        } finally {
+            setIsSavingPO(false);
+        }
+    };
+
     const updatePOStatus = async (po: DBPurchaseOrder, newStatus: POStatus) => {
         try {
             await savePurchaseOrderAction({ ...po, status: newStatus }, po.items || []);
@@ -487,7 +535,7 @@ export function FinanceAndBookingStep({
             };
             await savePurchaseOrderAction(newPO, []);
             await loadPOs();
-            setActivePOId(newPO.id);
+            openPODrawer(newPO.id, newPO);
             setIsCreatingManual(false);
         } catch (error) {
             console.error("Failed to create manual PO", error);
@@ -500,7 +548,7 @@ export function FinanceAndBookingStep({
         try {
             await deletePurchaseOrderAction(id);
             await loadPOs();
-            if (activePOId === id) setActivePOId(null);
+            if (activePOId === id) closePODrawer();
         } catch (error) {
             console.error("Failed to delete PO", error);
         }
@@ -539,6 +587,48 @@ export function FinanceAndBookingStep({
         const newTotal = updatedItems.reduce((sum, i) => sum + i.total_price, 0);
         await savePurchaseOrderAction({ ...po, total_amount: newTotal, subtotal: newTotal }, updatedItems);
         await loadPOs();
+    };
+
+
+    const addLocalPOItem = () => {
+        setEditingPO(prev => {
+            if (!prev) return null;
+            const newItem: Partial<DBPurchaseOrderItem> = {
+                id: crypto.randomUUID(),
+                description: 'New Service Item',
+                unit_price: 0,
+                quantity: 1,
+                total_price: 0
+            };
+            const updatedItems = [...(prev.items || []), newItem];
+            const newTotal = updatedItems.reduce((sum, i: any) => sum + (i.total_price || 0), 0);
+            return { ...prev, items: updatedItems as DBPurchaseOrderItem[], total_amount: newTotal, subtotal: newTotal };
+        });
+    };
+
+    const deleteLocalPOItem = (itemId: string) => {
+        setEditingPO(prev => {
+            if (!prev) return null;
+            const updatedItems = (prev.items || []).filter(item => item.id !== itemId);
+            const newTotal = updatedItems.reduce((sum, i) => sum + (i.total_price || 0), 0);
+            return { ...prev, items: updatedItems, total_amount: newTotal, subtotal: newTotal };
+        });
+    };
+
+    const updateLocalPOItem = (itemId: string, updates: Partial<DBPurchaseOrderItem>) => {
+        setEditingPO(prev => {
+            if (!prev) return null;
+            const updatedItems = (prev.items || []).map(item => {
+                if (item.id === itemId) {
+                    const refreshed = { ...item, ...updates };
+                    refreshed.total_price = (refreshed.unit_price || 0) * (refreshed.quantity || 1);
+                    return refreshed;
+                }
+                return item;
+            });
+            const newTotal = updatedItems.reduce((sum, i) => sum + (i.total_price || 0), 0);
+            return { ...prev, items: updatedItems, total_amount: newTotal, subtotal: newTotal };
+        });
     };
 
     const activePO = useMemo(() => dbPOs.find(po => po.id === activePOId), [dbPOs, activePOId]);
@@ -592,6 +682,47 @@ export function FinanceAndBookingStep({
             await loadPOs();
         } catch (error) {
             console.error("Failed to generate invoice", error);
+        }
+    };
+
+
+    const generateInvoiceLocal = async (po: DBPurchaseOrder) => {
+        if (po.invoices && po.invoices.length > 0) {
+            alert("A supplier invoice already exists for this PO.");
+            return;
+        }
+        setIsSavingPO(true);
+        try {
+            await savePurchaseOrderAction(po, po.items || []);
+            const newInvoice: Partial<DBVendorInvoice> = {
+                purchase_order_id: po.id,
+                invoice_number: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+                amount: po.total_amount,
+                status: 'Pending',
+                invoice_date: new Date().toISOString().split('T')[0],
+                due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            };
+            await saveVendorInvoiceAction(newInvoice);
+            setEditingPO(prev => prev ? { ...prev, invoices: [...(prev.invoices || []), newInvoice as any] } : null);
+            await loadPOs();
+        } catch (error) {
+            console.error("Failed to generate invoice", error);
+        } finally {
+            setIsSavingPO(false);
+        }
+    };
+
+    const updateInvoiceStatusLocal = async (invoice: DBVendorInvoice, newStatus: DBVendorInvoice['status']) => {
+        try {
+            await saveVendorInvoiceAction({ ...invoice, status: newStatus });
+            setEditingPO(prev => {
+                if (!prev) return null;
+                const updatedInvoices = (prev.invoices || []).map(i => i.id === invoice.id ? { ...i, status: newStatus } : i);
+                return { ...prev, invoices: updatedInvoices };
+            });
+            await loadPOs();
+        } catch (error) {
+            console.error("Failed to update invoice status", error);
         }
     };
 
@@ -828,7 +959,7 @@ export function FinanceAndBookingStep({
                                                                 e.stopPropagation();
                                                                 if (confirm(`Delete PO ${po.po_number}?`)) {
                                                                     deletePO(po.id);
-                                                                    if (activePOId === po.id) setActivePOId(null);
+                                                                    if (activePOId === po.id) closePODrawer();
                                                                 }
                                                             }}
                                                             className="p-2 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-lg transition-all"
@@ -837,7 +968,7 @@ export function FinanceAndBookingStep({
                                                             <Trash2 size={16} />
                                                         </button>
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); setActivePOId(activePOId === po.id ? null : po.id); }}
+                                                            onClick={(e) => { e.stopPropagation(); if (activePOId === po.id) closePODrawer(); else openPODrawer(po.id); }}
                                                             className={`p-2 rounded-lg transition-all ${activePOId === po.id ? 'bg-brand-gold text-white shadow-md' : 'hover:bg-neutral-100 text-neutral-400'}`}
                                                             title="Manage Details"
                                                         >
@@ -893,7 +1024,7 @@ export function FinanceAndBookingStep({
                 </div>
 
                 {/* PO Detail Side Drawer */}
-                {activePOId && (
+                {activePOId && editingPO && (
                     <div className="fixed inset-0 z-50 flex items-center justify-end bg-brand-charcoal/20 backdrop-blur-sm no-print">
                         <div className="w-full max-w-2xl h-full bg-white shadow-2xl animate-in slide-in-from-right duration-300 overflow-hidden flex flex-col">
                             <div className="p-8 border-b flex items-center justify-between bg-neutral-50">
@@ -903,15 +1034,15 @@ export function FinanceAndBookingStep({
                                     </div>
                                     <div className="flex-1 min-w-[300px]">
                                         <input
-                                            value={activePO?.vendor_name || ""}
-                                            onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_name: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                            value={editingPO?.vendor_name || ""}
+                                            onChange={(e) => setEditingPO(prev => prev ? { ...prev, vendor_name: e.target.value } : null)}
                                             placeholder="Enter Vendor Name"
                                             className="text-xl font-serif font-bold text-brand-green bg-transparent border-none p-0 focus:ring-0 w-full placeholder:text-neutral-300"
                                         />
-                                        <p className="text-xs text-neutral-400 font-mono font-bold uppercase tracking-widest">{activePO?.po_number}</p>
+                                        <p className="text-xs text-neutral-400 font-mono font-bold uppercase tracking-widest">{editingPO?.po_number}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setActivePOId(null)} className="p-3 hover:bg-white rounded-full transition-colors border border-transparent hover:border-neutral-200">
+                                <button onClick={() => closePODrawer()} className="p-3 hover:bg-white rounded-full transition-colors border border-transparent hover:border-neutral-200">
                                     <X size={24} className="text-neutral-400" />
                                 </button>
                             </div>
@@ -925,9 +1056,9 @@ export function FinanceAndBookingStep({
                                             <div className="space-y-1">
                                                 <label className="text-[9px] text-neutral-400 uppercase font-black">Category (Type)</label>
                                                 <select
-                                                    value={activePO?.vendor_type}
+                                                    value={editingPO?.vendor_type}
                                                     onChange={(e) => {
-                                                        if (!activePO) return;
+                                                        if (!editingPO) return;
                                                         // Reset provider references when category changes
                                                         const updates: Partial<DBPurchaseOrder> = {
                                                             vendor_type: e.target.value as any,
@@ -937,7 +1068,7 @@ export function FinanceAndBookingStep({
                                                             guide_id: null as any,
                                                             restaurant_id: null as any
                                                         };
-                                                        savePurchaseOrderAction({ ...activePO, ...updates }, activePO.items || []).then(() => loadPOs());
+                                                        setEditingPO(prev => prev ? { ...prev, ...updates } : null);
                                                     }}
                                                     className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
                                                 >
@@ -951,24 +1082,24 @@ export function FinanceAndBookingStep({
                                             </div>
 
                                             {/* Dynamic Provider Selection based on Category */}
-                                            {activePO?.vendor_type !== 'other' && (
+                                            {editingPO?.vendor_type !== 'other' && (
                                                 <div className="space-y-1">
                                                     <label className="text-[9px] text-neutral-400 uppercase font-black">Select Provider (Master Data)</label>
                                                     <select
                                                         value={
-                                                            activePO?.vendor_type === 'hotel' ? activePO.hotel_id || "" :
-                                                                activePO?.vendor_type === 'vendor' ? activePO.activity_vendor_id || "" :
-                                                                    activePO?.vendor_type === 'transport' ? activePO.transport_provider_id || "" :
-                                                                        activePO?.vendor_type === 'guide' ? activePO.guide_id || "" :
-                                                                            activePO?.vendor_type === 'restaurant' ? activePO.restaurant_id || "" : ""
+                                                            editingPO?.vendor_type === 'hotel' ? editingPO.hotel_id || "" :
+                                                                editingPO?.vendor_type === 'vendor' ? editingPO.activity_vendor_id || "" :
+                                                                    editingPO?.vendor_type === 'transport' ? editingPO.transport_provider_id || "" :
+                                                                        editingPO?.vendor_type === 'guide' ? editingPO.guide_id || "" :
+                                                                            editingPO?.vendor_type === 'restaurant' ? editingPO.restaurant_id || "" : ""
                                                         }
                                                         onChange={(e) => {
-                                                            if (!activePO) return;
+                                                            if (!editingPO) return;
                                                             const val = e.target.value;
                                                             let updates: Partial<DBPurchaseOrder> = {};
                                                             let selectedProvider: any = null;
 
-                                                            if (activePO.vendor_type === 'hotel') {
+                                                            if (editingPO.vendor_type === 'hotel') {
                                                                 updates.hotel_id = val;
                                                                 selectedProvider = masterHotels.find(h => h.id === val);
                                                                 if (selectedProvider) {
@@ -977,7 +1108,7 @@ export function FinanceAndBookingStep({
                                                                     updates.vendor_email = selectedProvider.sales_agent_name || ''; // Should ideally be email, mapping from existing logic
                                                                     updates.vendor_address = selectedProvider.location_address || '';
                                                                 }
-                                                            } else if (activePO.vendor_type === 'vendor') {
+                                                            } else if (editingPO.vendor_type === 'vendor') {
                                                                 updates.activity_vendor_id = val;
                                                                 selectedProvider = masterVendors.find(v => v.id === val);
                                                                 if (selectedProvider) {
@@ -986,7 +1117,7 @@ export function FinanceAndBookingStep({
                                                                     updates.vendor_email = selectedProvider.email || '';
                                                                     updates.vendor_address = selectedProvider.address || '';
                                                                 }
-                                                            } else if (activePO.vendor_type === 'transport') {
+                                                            } else if (editingPO.vendor_type === 'transport') {
                                                                 updates.transport_provider_id = val;
                                                                 selectedProvider = masterTransports.find(t => t.id === val);
                                                                 if (selectedProvider) {
@@ -995,7 +1126,7 @@ export function FinanceAndBookingStep({
                                                                     updates.vendor_email = selectedProvider.email || '';
                                                                     updates.vendor_address = selectedProvider.address || '';
                                                                 }
-                                                            } else if (activePO.vendor_type === 'guide') {
+                                                            } else if (editingPO.vendor_type === 'guide') {
                                                                 updates.guide_id = val;
                                                                 selectedProvider = masterGuides.find(g => g.id === val);
                                                                 if (selectedProvider) {
@@ -1004,7 +1135,7 @@ export function FinanceAndBookingStep({
                                                                     updates.vendor_email = '';
                                                                     updates.vendor_address = '';
                                                                 }
-                                                            } else if (activePO.vendor_type === 'restaurant') {
+                                                            } else if (editingPO.vendor_type === 'restaurant') {
                                                                 updates.restaurant_id = val;
                                                                 selectedProvider = masterRestaurants.find(r => r.id === val);
                                                                 if (selectedProvider) {
@@ -1015,16 +1146,16 @@ export function FinanceAndBookingStep({
                                                                 }
                                                             }
 
-                                                            savePurchaseOrderAction({ ...activePO, ...updates }, activePO.items || []).then(() => loadPOs());
+                                                            setEditingPO(prev => prev ? { ...prev, ...updates } : null);
                                                         }}
                                                         className="w-full bg-white border border-brand-gold/30 rounded-xl px-4 py-2 text-xs font-bold text-brand-green focus:ring-1 focus:ring-brand-gold"
                                                     >
                                                         <option value="">-- Custom / Unlinked --</option>
-                                                        {activePO?.vendor_type === 'hotel' && masterHotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                                                        {activePO?.vendor_type === 'vendor' && masterVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                                                        {activePO?.vendor_type === 'transport' && masterTransports.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                                        {activePO?.vendor_type === 'guide' && masterGuides.map(g => <option key={g.id} value={g.id}>{g.first_name} {g.last_name}</option>)}
-                                                        {activePO?.vendor_type === 'restaurant' && masterRestaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                                        {editingPO?.vendor_type === 'hotel' && masterHotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                                        {editingPO?.vendor_type === 'vendor' && masterVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                                        {editingPO?.vendor_type === 'transport' && masterTransports.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                        {editingPO?.vendor_type === 'guide' && masterGuides.map(g => <option key={g.id} value={g.id}>{g.first_name} {g.last_name}</option>)}
+                                                        {editingPO?.vendor_type === 'restaurant' && masterRestaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                                     </select>
                                                 </div>
                                             )}
@@ -1034,8 +1165,8 @@ export function FinanceAndBookingStep({
                                             <div className="space-y-1">
                                                 <label className="text-[9px] text-neutral-400 uppercase font-black">Phone Number</label>
                                                 <input
-                                                    value={activePO?.vendor_phone || ""}
-                                                    onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_phone: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                    value={editingPO?.vendor_phone || ""}
+                                                    onChange={(e) => setEditingPO(prev => prev ? { ...prev, vendor_phone: e.target.value } : null)}
                                                     placeholder="T: +94 ..."
                                                     className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
                                                 />
@@ -1044,8 +1175,8 @@ export function FinanceAndBookingStep({
                                         <div className="space-y-1">
                                             <label className="text-[9px] text-neutral-400 uppercase font-black">Email Address</label>
                                             <input
-                                                value={activePO?.vendor_email || ""}
-                                                onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_email: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                value={editingPO?.vendor_email || ""}
+                                                onChange={(e) => setEditingPO(prev => prev ? { ...prev, vendor_email: e.target.value } : null)}
                                                 placeholder="E: bookings@..."
                                                 className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
                                             />
@@ -1054,8 +1185,8 @@ export function FinanceAndBookingStep({
                                             <label className="text-[9px] text-neutral-400 uppercase font-black">Physical Address</label>
                                             <textarea
                                                 rows={2}
-                                                value={activePO?.vendor_address || ""}
-                                                onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_address: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                value={editingPO?.vendor_address || ""}
+                                                onChange={(e) => setEditingPO(prev => prev ? { ...prev, vendor_address: e.target.value } : null)}
                                                 placeholder="Street, City, Country"
                                                 className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold resize-none"
                                             />
@@ -1070,28 +1201,28 @@ export function FinanceAndBookingStep({
                                         <div className="p-4 bg-neutral-50 rounded-[24px] border border-neutral-100">
                                             <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-tight mb-2">PO Status</p>
                                             <div className="flex flex-wrap gap-2">
-                                                {activePO?.status === 'Draft' && (
-                                                    <button onClick={() => activePO && updatePOStatus(activePO, 'Sent')} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+                                                {editingPO?.status === 'Draft' && (
+                                                    <button onClick={() => editingPO && updateLocalPOStatus( 'Sent')} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
                                                         <Send size={12} /> Issue PO
                                                     </button>
                                                 )}
-                                                {activePO?.status === 'Sent' && (
-                                                    <button onClick={() => activePO && updatePOStatus(activePO, 'Accepted')} className="flex-1 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-bold uppercase hover:bg-green-100 transition-colors flex items-center justify-center gap-2">
+                                                {editingPO?.status === 'Sent' && (
+                                                    <button onClick={() => editingPO && updateLocalPOStatus( 'Accepted')} className="flex-1 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-bold uppercase hover:bg-green-100 transition-colors flex items-center justify-center gap-2">
                                                         <Check size={12} /> Confirm Accept
                                                     </button>
                                                 )}
-                                                {activePO?.status === 'Accepted' && !activePO.invoices?.length && (
-                                                    <button onClick={() => activePO && generateInvoice(activePO)} className="flex-1 py-2 bg-brand-gold text-white rounded-xl text-[10px] font-bold uppercase hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2">
+                                                {editingPO?.status === 'Accepted' && !editingPO.invoices?.length && (
+                                                    <button onClick={() => editingPO && generateInvoiceLocal(editingPO)} className="flex-1 py-2 bg-brand-gold text-white rounded-xl text-[10px] font-bold uppercase hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2">
                                                         <Receipt size={12} /> Generate INV
                                                     </button>
                                                 )}
-                                                {activePO?.status !== 'Draft' && (
-                                                    <p className="text-xs font-bold text-neutral-700 w-full text-center py-2">{activePO?.status}</p>
+                                                {editingPO?.status !== 'Draft' && (
+                                                    <p className="text-xs font-bold text-neutral-700 w-full text-center py-2">{editingPO?.status}</p>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="p-4 bg-neutral-50 rounded-[24px] border border-neutral-100 flex items-center justify-center">
-                                            <button onClick={() => activePO && setPreviewPO(activePO)} className="w-full h-full flex flex-col items-center justify-center gap-2 text-brand-gold hover:text-yellow-600 transition-colors">
+                                            <button onClick={() => editingPO && setPreviewPO(editingPO)} className="w-full h-full flex flex-col items-center justify-center gap-2 text-brand-gold hover:text-yellow-600 transition-colors">
                                                 <FileText size={20} />
                                                 <span className="text-[10px] font-black uppercase tracking-widest">Main Preview</span>
                                             </button>
@@ -1103,15 +1234,15 @@ export function FinanceAndBookingStep({
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h5 className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em]">Purchase Order Items</h5>
-                                        <button onClick={() => activePO && addPOItem(activePO)} className="px-4 py-1.5 bg-brand-gold/10 text-brand-gold rounded-full text-[10px] font-bold uppercase transition-all hover:bg-brand-gold hover:text-white flex items-center gap-1.5">
+                                        <button onClick={() => editingPO && addLocalPOItem()} className="px-4 py-1.5 bg-brand-gold/10 text-brand-gold rounded-full text-[10px] font-bold uppercase transition-all hover:bg-brand-gold hover:text-white flex items-center gap-1.5">
                                             <Plus size={12} /> Add Item
                                         </button>
                                     </div>
                                     <div className="space-y-3">
-                                        {(activePO?.items || []).map(item => (
+                                        {(editingPO?.items || []).map(item => (
                                             <div key={item.id} className="p-5 bg-white rounded-[24px] border border-neutral-100 shadow-sm relative group/item">
                                                 <button
-                                                    onClick={() => activePO && deletePOItem(activePO, item.id)}
+                                                    onClick={() => editingPO && deleteLocalPOItem(item.id)}
                                                     className="absolute -top-2 -right-2 p-1.5 bg-red-50 text-red-500 border border-red-100 rounded-full hover:bg-red-100 transition-all opacity-0 group-hover/item:opacity-100"
                                                 >
                                                     <Trash2 size={12} />
@@ -1120,11 +1251,11 @@ export function FinanceAndBookingStep({
                                                     <div className="col-span-12 md:col-span-8">
                                                         <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Description</label>
 
-                                                        {activePO?.vendor_type === 'transport' && activePO?.transport_provider_id ? (
+                                                        {editingPO?.vendor_type === 'transport' && editingPO?.transport_provider_id ? (
                                                             <div className="space-y-2">
                                                                 <input
                                                                     value={item.description}
-                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
                                                                     className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                                     placeholder="Custom transport description"
                                                                 />
@@ -1132,31 +1263,31 @@ export function FinanceAndBookingStep({
                                                                     value={item.vehicle_type || ''}
                                                                     onChange={(e) => {
                                                                         const val = e.target.value;
-                                                                        const provider = masterTransports.find(t => t.id === activePO?.transport_provider_id);
+                                                                        const provider = masterTransports.find(t => t.id === editingPO?.transport_provider_id);
                                                                         const vehicle = provider?.vehicles?.find((v: any) => v.type === val);
-                                                                        if (vehicle && activePO) {
-                                                                            updatePOItem(activePO, item.id, {
+                                                                        if (vehicle && editingPO) {
+                                                                            updateLocalPOItem(item.id, {
                                                                                 vehicle_type: vehicle.type,
                                                                                 unit_price: vehicle.day_rate,
                                                                                 description: `${vehicle.type} - Daily Rate`
                                                                             });
-                                                                        } else if (val === '' && activePO) {
-                                                                            updatePOItem(activePO, item.id, { vehicle_type: '' });
+                                                                        } else if (val === '' && editingPO) {
+                                                                            updateLocalPOItem(item.id, { vehicle_type: '' });
                                                                         }
                                                                     }}
                                                                     className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
                                                                 >
                                                                     <option value="">-- Select Vehicle from Provider --</option>
-                                                                    {masterTransports.find(t => t.id === activePO?.transport_provider_id)?.vehicles?.map((v: any, i: number) => (
+                                                                    {masterTransports.find(t => t.id === editingPO?.transport_provider_id)?.vehicles?.map((v: any, i: number) => (
                                                                         <option key={i} value={v.type}>{v.type} (LKR {v.day_rate.toLocaleString()}/day)</option>
                                                                     ))}
                                                                 </select>
                                                             </div>
-                                                        ) : activePO?.vendor_type === 'hotel' && activePO?.hotel_id ? (
+                                                        ) : editingPO?.vendor_type === 'hotel' && editingPO?.hotel_id ? (
                                                             <div className="space-y-2">
                                                                 <input
                                                                     value={item.description}
-                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
                                                                     className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                                     placeholder="Custom room description"
                                                                 />
@@ -1164,39 +1295,39 @@ export function FinanceAndBookingStep({
                                                                     value={item.room_type || ''}
                                                                     onChange={(e) => {
                                                                         const val = e.target.value;
-                                                                        const provider = masterHotels.find(h => h.id === activePO?.hotel_id);
+                                                                        const provider = masterHotels.find(h => h.id === editingPO?.hotel_id);
                                                                         const room = provider?.rooms?.find((r: any) => r.type === val);
-                                                                        if (room && activePO) {
-                                                                            updatePOItem(activePO, item.id, {
+                                                                        if (room && editingPO) {
+                                                                            updateLocalPOItem(item.id, {
                                                                                 room_type: room.type,
                                                                                 unit_price: room.price_per_night,
                                                                                 description: `1x ${room.type}`
                                                                             });
-                                                                        } else if (val === '' && activePO) {
-                                                                            updatePOItem(activePO, item.id, { room_type: '' });
+                                                                        } else if (val === '' && editingPO) {
+                                                                            updateLocalPOItem(item.id, { room_type: '' });
                                                                         }
                                                                     }}
                                                                     className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
                                                                 >
                                                                     <option value="">-- Select Room from Hotel --</option>
-                                                                    {masterHotels.find(h => h.id === activePO?.hotel_id)?.rooms?.map((r: any, i: number) => (
+                                                                    {masterHotels.find(h => h.id === editingPO?.hotel_id)?.rooms?.map((r: any, i: number) => (
                                                                         <option key={i} value={r.type}>{r.type} (LKR {r.price_per_night.toLocaleString()}/night)</option>
                                                                     ))}
                                                                 </select>
                                                             </div>
-                                                        ) : activePO?.vendor_type === 'guide' && activePO?.guide_id ? (
+                                                        ) : editingPO?.vendor_type === 'guide' && editingPO?.guide_id ? (
                                                             <div className="space-y-2">
                                                                 <input
                                                                     value={item.description}
-                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
                                                                     className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                                     placeholder="Custom guide description"
                                                                 />
                                                                 <button
                                                                     onClick={() => {
-                                                                        const provider = masterGuides.find(g => g.id === activePO?.guide_id);
-                                                                        if (provider && provider.per_day_rate && activePO) {
-                                                                            updatePOItem(activePO, item.id, {
+                                                                        const provider = masterGuides.find(g => g.id === editingPO?.guide_id);
+                                                                        if (provider && provider.per_day_rate && editingPO) {
+                                                                            updateLocalPOItem(item.id, {
                                                                                 unit_price: provider.per_day_rate,
                                                                                 description: 'Guide Services - Daily Rate'
                                                                             });
@@ -1204,13 +1335,13 @@ export function FinanceAndBookingStep({
                                                                     }}
                                                                     className="w-full text-xs font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/30 rounded-xl px-3 py-1.5 hover:bg-brand-gold hover:text-white transition-colors"
                                                                 >
-                                                                    Apply Guide Daily Rate (LKR {masterGuides.find(g => g.id === activePO?.guide_id)?.per_day_rate?.toLocaleString() || '0'})
+                                                                    Apply Guide Daily Rate (LKR {masterGuides.find(g => g.id === editingPO?.guide_id)?.per_day_rate?.toLocaleString() || '0'})
                                                                 </button>
                                                             </div>
                                                         ) : (
                                                             <input
                                                                 value={item.description}
-                                                                onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
                                                                 className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                                 placeholder="Item Description"
                                                             />
@@ -1221,7 +1352,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="date"
                                                             value={item.service_date || ""}
-                                                            onChange={(e) => activePO && updatePOItem(activePO, item.id, { service_date: e.target.value })}
+                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { service_date: e.target.value })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
                                                         />
                                                     </div>
@@ -1230,7 +1361,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="number"
                                                             value={item.quantity}
-                                                            onChange={(e) => activePO && updatePOItem(activePO, item.id, { quantity: Number(e.target.value) })}
+                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { quantity: Number(e.target.value) })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-center"
                                                         />
                                                     </div>
@@ -1239,7 +1370,7 @@ export function FinanceAndBookingStep({
                                                         <input
                                                             type="number"
                                                             value={item.unit_price}
-                                                            onChange={(e) => activePO && updatePOItem(activePO, item.id, { unit_price: Number(e.target.value) })}
+                                                            onChange={(e) => editingPO && updateLocalPOItem(item.id, { unit_price: Number(e.target.value) })}
                                                             className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-right"
                                                         />
                                                     </div>
@@ -1250,7 +1381,7 @@ export function FinanceAndBookingStep({
                                 </div>
 
                                 {/* Invoice Section */}
-                                {activePO?.invoices?.map(inv => (
+                                {editingPO?.invoices?.map(inv => (
                                     <div key={inv.id} className="space-y-4">
                                         <h5 className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em]">Supplier Invoice Control</h5>
                                         <div className="p-6 bg-brand-green/5 rounded-[32px] border border-brand-green/10 space-y-6">
@@ -1272,7 +1403,7 @@ export function FinanceAndBookingStep({
                                                     <label className="text-[9px] text-neutral-400 uppercase font-black">Payment Status</label>
                                                     <select
                                                         value={inv.status}
-                                                        onChange={(e) => updateInvoiceStatus(inv, e.target.value as any)}
+                                                        onChange={(e) => updateInvoiceStatusLocal(inv, e.target.value as any)}
                                                         className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
                                                     >
                                                         <option value="Pending">Pending Audit</option>
@@ -1294,14 +1425,22 @@ export function FinanceAndBookingStep({
                             </div>
 
                             <div className="p-8 border-t bg-neutral-50 flex items-center justify-between">
-                                <div className="flex flex-col">
+                                <button
+                                    onClick={saveEditedPO}
+                                    disabled={isSavingPO}
+                                    className="px-8 py-3 bg-brand-gold text-white font-bold rounded-2xl hover:bg-yellow-600 transition-all flex items-center gap-2 shadow-lg"
+                                >
+                                    {isSavingPO ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
+                                    {isSavingPO ? 'Saving...' : 'Save PO Changes'}
+                                </button>
+                                <div className="flex flex-col text-right">
                                     <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Total Commitment</span>
-                                    <span className="text-2xl font-serif font-black text-brand-green">Rs. {activePO?.total_amount.toLocaleString()}</span>
+                                    <span className="text-2xl font-serif font-black text-brand-green">Rs. {editingPO?.total_amount.toLocaleString()}</span>
                                 </div>
                                 <button onClick={() => {
-                                    if (activePO && confirm("Delete this PO?")) {
-                                        deletePO(activePO.id);
-                                        setActivePOId(null);
+                                    if (editingPO && confirm("Delete this PO?")) {
+                                        deletePO(editingPO.id);
+                                        closePODrawer();
                                     }
                                 }} className="p-4 text-red-500 hover:bg-red-50 rounded-2xl transition-all">
                                     <Trash2 size={20} />
