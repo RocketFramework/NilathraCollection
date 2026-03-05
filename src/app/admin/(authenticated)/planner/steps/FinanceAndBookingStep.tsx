@@ -39,6 +39,13 @@ export function FinanceAndBookingStep({
     const [selectedPOIds, setSelectedPOIds] = useState<string[]>([]);
     const [isCreatingManual, setIsCreatingManual] = useState(false);
 
+    // Master Data State for Manual POs
+    const [masterHotels, setMasterHotels] = useState<any[]>([]);
+    const [masterVendors, setMasterVendors] = useState<any[]>([]);
+    const [masterTransports, setMasterTransports] = useState<any[]>([]);
+    const [masterGuides, setMasterGuides] = useState<any[]>([]);
+    const [masterRestaurants, setMasterRestaurants] = useState<any[]>([]);
+
     const manualPOTypes: { label: string, type: string, vendorType: DBPurchaseOrder['vendor_type'] }[] = [
         { label: 'Activity', type: 'activity', vendorType: 'vendor' },
         { label: 'Travel', type: 'travel', vendorType: 'transport' },
@@ -77,20 +84,32 @@ export function FinanceAndBookingStep({
 
     useEffect(() => {
         loadPOs();
-        const fetchRate = async () => {
+        const fetchRateAndMasterData = async () => {
             setIsLoadingRate(true);
             try {
-                const res = await getExchangeRateAction();
-                if (res.success && res.rate) {
-                    setExchangeRate(res.rate);
-                }
+                const [rateRes, hotelsRes, vendorsRes, transportsRes, guidesRes, restRes] = await Promise.all([
+                    getExchangeRateAction(),
+                    getHotelsListAction(),
+                    getVendorsAction(),
+                    getTransportProvidersAction(),
+                    getTourGuidesAction(),
+                    getRestaurantsAction()
+                ]);
+
+                if (rateRes.success && rateRes.rate) setExchangeRate(rateRes.rate);
+                if (hotelsRes.success) setMasterHotels(hotelsRes.hotels || []);
+                if (vendorsRes.success) setMasterVendors(vendorsRes.vendors || []);
+                if (transportsRes.success) setMasterTransports(transportsRes.providers || []);
+                if (guidesRes.success) setMasterGuides(guidesRes.guides || []);
+                if (restRes.success) setMasterRestaurants(restRes.restaurants || []);
+
             } catch (err) {
-                console.error("Failed to fetch exchange rate", err);
+                console.error("Failed to fetch initial data", err);
             } finally {
                 setIsLoadingRate(false);
             }
         };
-        fetchRate();
+        fetchRateAndMasterData();
     }, [tourId]);
 
     // AGGREGATION ENGINE: Scans trip data to build recommended POs
@@ -805,6 +824,19 @@ export function FinanceAndBookingStep({
                                                             <FileText size={16} />
                                                         </button>
                                                         <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm(`Delete PO ${po.po_number}?`)) {
+                                                                    deletePO(po.id);
+                                                                    if (activePOId === po.id) setActivePOId(null);
+                                                                }
+                                                            }}
+                                                            className="p-2 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-lg transition-all"
+                                                            title="Delete PO"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                        <button
                                                             onClick={(e) => { e.stopPropagation(); setActivePOId(activePOId === po.id ? null : po.id); }}
                                                             className={`p-2 rounded-lg transition-all ${activePOId === po.id ? 'bg-brand-gold text-white shadow-md' : 'hover:bg-neutral-100 text-neutral-400'}`}
                                                             title="Manage Details"
@@ -869,8 +901,13 @@ export function FinanceAndBookingStep({
                                     <div className="p-3 bg-brand-gold/10 text-brand-gold rounded-2xl">
                                         <Settings size={24} />
                                     </div>
-                                    <div>
-                                        <h4 className="text-xl font-serif font-bold text-brand-green">{activePO?.vendor_name}</h4>
+                                    <div className="flex-1 min-w-[300px]">
+                                        <input
+                                            value={activePO?.vendor_name || ""}
+                                            onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_name: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                            placeholder="Enter Vendor Name"
+                                            className="text-xl font-serif font-bold text-brand-green bg-transparent border-none p-0 focus:ring-0 w-full placeholder:text-neutral-300"
+                                        />
                                         <p className="text-xs text-neutral-400 font-mono font-bold uppercase tracking-widest">{activePO?.po_number}</p>
                                     </div>
                                 </div>
@@ -880,6 +917,152 @@ export function FinanceAndBookingStep({
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-8 space-y-10">
+                                {/* Vendor Details & Category */}
+                                <div className="space-y-4">
+                                    <h5 className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em]">Vendor Details & Category</h5>
+                                    <div className="bg-neutral-50 p-6 rounded-[32px] border border-neutral-100 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] text-neutral-400 uppercase font-black">Category (Type)</label>
+                                                <select
+                                                    value={activePO?.vendor_type}
+                                                    onChange={(e) => {
+                                                        if (!activePO) return;
+                                                        // Reset provider references when category changes
+                                                        const updates: Partial<DBPurchaseOrder> = {
+                                                            vendor_type: e.target.value as any,
+                                                            hotel_id: null as any,
+                                                            activity_vendor_id: null as any,
+                                                            transport_provider_id: null as any,
+                                                            guide_id: null as any,
+                                                            restaurant_id: null as any
+                                                        };
+                                                        savePurchaseOrderAction({ ...activePO, ...updates }, activePO.items || []).then(() => loadPOs());
+                                                    }}
+                                                    className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
+                                                >
+                                                    <option value="vendor">Activity / Experience</option>
+                                                    <option value="transport">Transport / Travel</option>
+                                                    <option value="hotel">Accommodation / Sleep</option>
+                                                    <option value="restaurant">Restaurant / Meal</option>
+                                                    <option value="guide">Guide Service</option>
+                                                    <option value="other">Buffer / Wait / Custom</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Dynamic Provider Selection based on Category */}
+                                            {activePO?.vendor_type !== 'other' && (
+                                                <div className="space-y-1">
+                                                    <label className="text-[9px] text-neutral-400 uppercase font-black">Select Provider (Master Data)</label>
+                                                    <select
+                                                        value={
+                                                            activePO?.vendor_type === 'hotel' ? activePO.hotel_id || "" :
+                                                                activePO?.vendor_type === 'vendor' ? activePO.activity_vendor_id || "" :
+                                                                    activePO?.vendor_type === 'transport' ? activePO.transport_provider_id || "" :
+                                                                        activePO?.vendor_type === 'guide' ? activePO.guide_id || "" :
+                                                                            activePO?.vendor_type === 'restaurant' ? activePO.restaurant_id || "" : ""
+                                                        }
+                                                        onChange={(e) => {
+                                                            if (!activePO) return;
+                                                            const val = e.target.value;
+                                                            let updates: Partial<DBPurchaseOrder> = {};
+                                                            let selectedProvider: any = null;
+
+                                                            if (activePO.vendor_type === 'hotel') {
+                                                                updates.hotel_id = val;
+                                                                selectedProvider = masterHotels.find(h => h.id === val);
+                                                                if (selectedProvider) {
+                                                                    updates.vendor_name = selectedProvider.name;
+                                                                    updates.vendor_phone = selectedProvider.reservation_agent_contact || selectedProvider.gm_contact || '';
+                                                                    updates.vendor_email = selectedProvider.sales_agent_name || ''; // Should ideally be email, mapping from existing logic
+                                                                    updates.vendor_address = selectedProvider.location_address || '';
+                                                                }
+                                                            } else if (activePO.vendor_type === 'vendor') {
+                                                                updates.activity_vendor_id = val;
+                                                                selectedProvider = masterVendors.find(v => v.id === val);
+                                                                if (selectedProvider) {
+                                                                    updates.vendor_name = selectedProvider.name;
+                                                                    updates.vendor_phone = selectedProvider.phone || '';
+                                                                    updates.vendor_email = selectedProvider.email || '';
+                                                                    updates.vendor_address = selectedProvider.address || '';
+                                                                }
+                                                            } else if (activePO.vendor_type === 'transport') {
+                                                                updates.transport_provider_id = val;
+                                                                selectedProvider = masterTransports.find(t => t.id === val);
+                                                                if (selectedProvider) {
+                                                                    updates.vendor_name = selectedProvider.name;
+                                                                    updates.vendor_phone = selectedProvider.phone || '';
+                                                                    updates.vendor_email = selectedProvider.email || '';
+                                                                    updates.vendor_address = selectedProvider.address || '';
+                                                                }
+                                                            } else if (activePO.vendor_type === 'guide') {
+                                                                updates.guide_id = val;
+                                                                selectedProvider = masterGuides.find(g => g.id === val);
+                                                                if (selectedProvider) {
+                                                                    updates.vendor_name = `${selectedProvider.first_name} ${selectedProvider.last_name || ''}`.trim();
+                                                                    updates.vendor_phone = selectedProvider.phone || '';
+                                                                    updates.vendor_email = '';
+                                                                    updates.vendor_address = '';
+                                                                }
+                                                            } else if (activePO.vendor_type === 'restaurant') {
+                                                                updates.restaurant_id = val;
+                                                                selectedProvider = masterRestaurants.find(r => r.id === val);
+                                                                if (selectedProvider) {
+                                                                    updates.vendor_name = selectedProvider.name;
+                                                                    updates.vendor_phone = selectedProvider.contact_number || '';
+                                                                    updates.vendor_email = selectedProvider.email || '';
+                                                                    updates.vendor_address = selectedProvider.address || '';
+                                                                }
+                                                            }
+
+                                                            savePurchaseOrderAction({ ...activePO, ...updates }, activePO.items || []).then(() => loadPOs());
+                                                        }}
+                                                        className="w-full bg-white border border-brand-gold/30 rounded-xl px-4 py-2 text-xs font-bold text-brand-green focus:ring-1 focus:ring-brand-gold"
+                                                    >
+                                                        <option value="">-- Custom / Unlinked --</option>
+                                                        {activePO?.vendor_type === 'hotel' && masterHotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                                        {activePO?.vendor_type === 'vendor' && masterVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                                        {activePO?.vendor_type === 'transport' && masterTransports.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                        {activePO?.vendor_type === 'guide' && masterGuides.map(g => <option key={g.id} value={g.id}>{g.first_name} {g.last_name}</option>)}
+                                                        {activePO?.vendor_type === 'restaurant' && masterRestaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] text-neutral-400 uppercase font-black">Phone Number</label>
+                                                <input
+                                                    value={activePO?.vendor_phone || ""}
+                                                    onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_phone: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                    placeholder="T: +94 ..."
+                                                    className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] text-neutral-400 uppercase font-black">Email Address</label>
+                                            <input
+                                                value={activePO?.vendor_email || ""}
+                                                onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_email: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                placeholder="E: bookings@..."
+                                                className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] text-neutral-400 uppercase font-black">Physical Address</label>
+                                            <textarea
+                                                rows={2}
+                                                value={activePO?.vendor_address || ""}
+                                                onChange={(e) => activePO && savePurchaseOrderAction({ ...activePO, vendor_address: e.target.value }, activePO.items || []).then(() => loadPOs())}
+                                                placeholder="Street, City, Country"
+                                                className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-1 focus:ring-brand-gold resize-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Status Control */}
                                 <div className="space-y-4">
                                     <h5 className="text-[10px] font-black text-brand-gold uppercase tracking-[0.2em]">Management Actions</h5>
@@ -936,11 +1119,102 @@ export function FinanceAndBookingStep({
                                                 <div className="grid grid-cols-12 gap-4">
                                                     <div className="col-span-12 md:col-span-8">
                                                         <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Description</label>
-                                                        <input
-                                                            value={item.description}
-                                                            onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
-                                                            className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                        />
+
+                                                        {activePO?.vendor_type === 'transport' && activePO?.transport_provider_id ? (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    value={item.description}
+                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                    placeholder="Custom transport description"
+                                                                />
+                                                                <select
+                                                                    value={item.vehicle_type || ''}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        const provider = masterTransports.find(t => t.id === activePO?.transport_provider_id);
+                                                                        const vehicle = provider?.vehicles?.find((v: any) => v.type === val);
+                                                                        if (vehicle && activePO) {
+                                                                            updatePOItem(activePO, item.id, {
+                                                                                vehicle_type: vehicle.type,
+                                                                                unit_price: vehicle.day_rate,
+                                                                                description: `${vehicle.type} - Daily Rate`
+                                                                            });
+                                                                        } else if (val === '' && activePO) {
+                                                                            updatePOItem(activePO, item.id, { vehicle_type: '' });
+                                                                        }
+                                                                    }}
+                                                                    className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
+                                                                >
+                                                                    <option value="">-- Select Vehicle from Provider --</option>
+                                                                    {masterTransports.find(t => t.id === activePO?.transport_provider_id)?.vehicles?.map((v: any, i: number) => (
+                                                                        <option key={i} value={v.type}>{v.type} (LKR {v.day_rate.toLocaleString()}/day)</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        ) : activePO?.vendor_type === 'hotel' && activePO?.hotel_id ? (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    value={item.description}
+                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                    placeholder="Custom room description"
+                                                                />
+                                                                <select
+                                                                    value={item.room_type || ''}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        const provider = masterHotels.find(h => h.id === activePO?.hotel_id);
+                                                                        const room = provider?.rooms?.find((r: any) => r.type === val);
+                                                                        if (room && activePO) {
+                                                                            updatePOItem(activePO, item.id, {
+                                                                                room_type: room.type,
+                                                                                unit_price: room.price_per_night,
+                                                                                description: `1x ${room.type}`
+                                                                            });
+                                                                        } else if (val === '' && activePO) {
+                                                                            updatePOItem(activePO, item.id, { room_type: '' });
+                                                                        }
+                                                                    }}
+                                                                    className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
+                                                                >
+                                                                    <option value="">-- Select Room from Hotel --</option>
+                                                                    {masterHotels.find(h => h.id === activePO?.hotel_id)?.rooms?.map((r: any, i: number) => (
+                                                                        <option key={i} value={r.type}>{r.type} (LKR {r.price_per_night.toLocaleString()}/night)</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        ) : activePO?.vendor_type === 'guide' && activePO?.guide_id ? (
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    value={item.description}
+                                                                    onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                    className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                    placeholder="Custom guide description"
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const provider = masterGuides.find(g => g.id === activePO?.guide_id);
+                                                                        if (provider && provider.per_day_rate && activePO) {
+                                                                            updatePOItem(activePO, item.id, {
+                                                                                unit_price: provider.per_day_rate,
+                                                                                description: 'Guide Services - Daily Rate'
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                    className="w-full text-xs font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/30 rounded-xl px-3 py-1.5 hover:bg-brand-gold hover:text-white transition-colors"
+                                                                >
+                                                                    Apply Guide Daily Rate (LKR {masterGuides.find(g => g.id === activePO?.guide_id)?.per_day_rate?.toLocaleString() || '0'})
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <input
+                                                                value={item.description}
+                                                                onChange={(e) => activePO && updatePOItem(activePO, item.id, { description: e.target.value })}
+                                                                className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                placeholder="Item Description"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <div className="col-span-12 md:col-span-4">
                                                         <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Service Date</label>

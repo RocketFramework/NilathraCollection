@@ -36,24 +36,26 @@ export class FinanceService {
         // Strip generated columns that PostgreSQL refuses to accept in INSERT/UPDATE
         delete poData.balance_payable;
 
-        let savedPOId = id;
+        let savedPOId: string;
 
         if (id) {
-            // Update PO header
+            // Use upsert to handle both updates and inserts with client-side IDs
             const { error: poError } = await supabase
                 .from('purchase_orders')
-                .update(poData)
-                .eq('id', id);
-            if (poError) throw poError;
+                .upsert({ id, ...poData }, { onConflict: 'id' });
 
-            // Delete existing items for a clean rewrite
+            if (poError) throw poError;
+            savedPOId = id;
+
+            // Delete existing items for a clean rewrite (only if it was an update)
+            // Note: If it was a new insert, this delete does nothing.
             const { error: delError } = await supabase
                 .from('purchase_order_items')
                 .delete()
                 .eq('purchase_order_id', id);
             if (delError) throw delError;
         } else {
-            // Insert PO header
+            // Insert PO header letting DB generate ID
             const { data: newPO, error: poError } = await supabase
                 .from('purchase_orders')
                 .insert([poData])
