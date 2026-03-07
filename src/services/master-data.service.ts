@@ -100,7 +100,7 @@ export interface TourGuide {
     languages?: string[];
     license_id?: string;
     is_suspended?: boolean;
-    daily_rate?: number;
+    per_day_rate?: number;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
 }
@@ -154,30 +154,78 @@ export class MasterDataService {
     // ==========================================
     // Activities CRUD
     // ==========================================
-    static async getActivities() {
-        const { data, error } = await supabase.from('activities').select('*').order('activity_name');
+    static async getActivities(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        let query = supabaseClient.from('activities').select('*', { count: 'exact' });
+
+        if (options?.searchTerm) {
+            query = query.or(`activity_name.ilike.%${options.searchTerm}%,location_name.ilike.%${options.searchTerm}%,category.ilike.%${options.searchTerm}%`);
+        }
+
+        if (options?.sortBy) {
+            query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+        } else {
+            query = query.order('activity_name');
+        }
+
+        if (options?.page !== undefined && options?.pageSize !== undefined) {
+            const from = options.page * options.pageSize;
+            const to = from + options.pageSize - 1;
+            query = query.range(from, to);
+        }
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data as Activity[];
+        return { data: data as Activity[], count: count || 0 };
     }
 
     // ==========================================
     // Vendors CRUD
     // ==========================================
-    static async getVendors(client?: any) {
-        const supabaseClient = client || supabase;
+    static async getVendors(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
 
         try {
-            // 1. Fetch Vendors with basic joins
-            const { data: vendors, error: vError } = await supabaseClient
-                .from('vendors')
-                .select('*, payment_details(*)')
-                .order('name');
+            // 1. Initial Query for Vendors with count
+            let query = supabaseClient.from('vendors').select('*, payment_details(*)', { count: 'exact' });
+
+            if (options?.searchTerm) {
+                query = query.or(`name.ilike.%${options.searchTerm}%,email.ilike.%${options.searchTerm}%,phone.ilike.%${options.searchTerm}%`);
+            }
+
+            if (options?.sortBy) {
+                query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+            } else {
+                query = query.order('name');
+            }
+
+            if (options?.page !== undefined && options?.pageSize !== undefined) {
+                const from = options.page * options.pageSize;
+                const to = from + options.pageSize - 1;
+                query = query.range(from, to);
+            }
+
+            const { data: vendors, error: vError, count } = await query;
 
             if (vError) throw vError;
-            if (!vendors) return [];
+            if (!vendors) return { data: [], count: 0 };
 
-            // 2. Fetch Vendor Activities along with Activity names separately
-            // This is more robust than complex nested joins across junction tables
+            // 2. Fetch Vendor Activities along with Activity names
+            const vendorIds = vendors.map(v => v.id);
             const { data: vendorActivities, error: vaError } = await supabaseClient
                 .from('vendor_activities')
                 .select(`
@@ -185,11 +233,12 @@ export class MasterDataService {
                     activities:activities (
                         activity_name
                     )
-                `);
+                `)
+                .in('vendor_id', vendorIds);
 
             if (vaError) {
                 console.error("Error fetching vendor_activities, returning vendors only:", vaError);
-                return vendors as Vendor[];
+                return { data: vendors as Vendor[], count: count || 0 };
             }
 
             // 3. Join in memory
@@ -210,12 +259,12 @@ export class MasterDataService {
                     })
             }));
 
-            return mappedVendors as Vendor[];
+            return { data: mappedVendors as Vendor[], count: count || 0 };
         } catch (err) {
             console.error("Critical error in getVendors service:", err);
-            // Absolute fallback
-            const { data } = await supabaseClient.from('vendors').select('*').order('name');
-            return (data || []) as Vendor[];
+            // Minimal fallback for production stability (non-paginated if error occurs)
+            const { data, count } = await supabaseClient.from('vendors').select('*', { count: 'exact' }).limit(50);
+            return { data: (data || []) as Vendor[], count: count || 0 };
         }
     }
 
@@ -339,10 +388,64 @@ export class MasterDataService {
     // ==========================================
     // Transport Providers CRUD
     // ==========================================
-    static async getTransportProviders() {
-        const { data, error } = await supabase.from('transport_providers').select('*, payment_details(*), transport_vehicles(*)').order('name');
-        if (error) throw error;
-        return data as TransportProvider[];
+    static async getTransportProviders(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        try {
+            // 1. Initial Query for Transport Providers
+            let query = supabaseClient.from('transport_providers').select('*, payment_details(*)', { count: 'exact' });
+
+            if (options?.searchTerm) {
+                query = query.or(`name.ilike.%${options.searchTerm}%,email.ilike.%${options.searchTerm}%,phone.ilike.%${options.searchTerm}%`);
+            }
+
+            if (options?.sortBy) {
+                query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+            } else {
+                query = query.order('name');
+            }
+
+            if (options?.page !== undefined && options?.pageSize !== undefined) {
+                const from = options.page * options.pageSize;
+                const to = from + options.pageSize - 1;
+                query = query.range(from, to);
+            }
+
+            const { data: providers, error: pError, count } = await query;
+
+            if (pError) throw pError;
+            if (!providers) return { data: [], count: 0 };
+
+            // 2. Fetch associated vehicles
+            const providerIds = providers.map(p => p.id);
+            const { data: vehicles, error: vError } = await supabaseClient
+                .from('transport_vehicles')
+                .select('*')
+                .in('provider_id', providerIds);
+
+            if (vError) {
+                console.error("Error fetching vehicles, returning providers only:", vError);
+                return { data: providers as TransportProvider[], count: count || 0 };
+            }
+
+            // 3. Join in memory
+            const mappedProviders = (providers as any[]).map(p => ({
+                ...p,
+                transport_vehicles: (vehicles || []).filter((v: any) => v.provider_id === p.id)
+            }));
+
+            return { data: mappedProviders as TransportProvider[], count: count || 0 };
+        } catch (err) {
+            console.error("Error in getTransportProviders:", err);
+            const { data, count } = await supabaseClient.from('transport_providers').select('*, payment_details(*)', { count: 'exact' }).limit(50);
+            return { data: (data || []) as TransportProvider[], count: count || 0 };
+        }
     }
 
     static async getTransportProvider(id: string) {
@@ -403,10 +506,36 @@ export class MasterDataService {
     // ==========================================
     // Drivers CRUD
     // ==========================================
-    static async getDrivers() {
-        const { data, error } = await supabase.from('drivers').select('*, payment_details(*)').order('first_name');
+    static async getDrivers(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        let query = supabaseClient.from('drivers').select('*, payment_details(*)', { count: 'exact' });
+
+        if (options?.searchTerm) {
+            query = query.or(`first_name.ilike.%${options.searchTerm}%,last_name.ilike.%${options.searchTerm}%,phone.ilike.%${options.searchTerm}%`);
+        }
+
+        if (options?.sortBy) {
+            query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+        } else {
+            query = query.order('first_name');
+        }
+
+        if (options?.page !== undefined && options?.pageSize !== undefined) {
+            const from = options.page * options.pageSize;
+            const to = from + options.pageSize - 1;
+            query = query.range(from, to);
+        }
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data as Driver[];
+        return { data: data as Driver[], count: count || 0 };
     }
 
     static async getDriver(id: string) {
@@ -446,10 +575,36 @@ export class MasterDataService {
     // ==========================================
     // Tour Guides CRUD
     // ==========================================
-    static async getTourGuides() {
-        const { data, error } = await supabase.from('tour_guides').select('*, payment_details(*)').order('first_name');
+    static async getTourGuides(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        let query = supabaseClient.from('tour_guides').select('*, payment_details(*)', { count: 'exact' });
+
+        if (options?.searchTerm) {
+            query = query.or(`first_name.ilike.%${options.searchTerm}%,last_name.ilike.%${options.searchTerm}%,phone.ilike.%${options.searchTerm}%`);
+        }
+
+        if (options?.sortBy) {
+            query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+        } else {
+            query = query.order('first_name');
+        }
+
+        if (options?.page !== undefined && options?.pageSize !== undefined) {
+            const from = options.page * options.pageSize;
+            const to = from + options.pageSize - 1;
+            query = query.range(from, to);
+        }
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data as TourGuide[];
+        return { data: data as TourGuide[], count: count || 0 };
     }
 
     static async getTourGuide(id: string) {
@@ -489,11 +644,36 @@ export class MasterDataService {
     // ==========================================
     // Restaurants CRUD
     // ==========================================
-    static async getRestaurants(client?: any) {
-        const supabaseClient = client || supabase;
-        const { data, error } = await supabaseClient.from('restaurants').select('*, payment_details(*)').order('name');
+    static async getRestaurants(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        let query = supabaseClient.from('restaurants').select('*, payment_details(*)', { count: 'exact' });
+
+        if (options?.searchTerm) {
+            query = query.or(`name.ilike.%${options.searchTerm}%,address.ilike.%${options.searchTerm}%,email.ilike.%${options.searchTerm}%`);
+        }
+
+        if (options?.sortBy) {
+            query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+        } else {
+            query = query.order('name');
+        }
+
+        if (options?.page !== undefined && options?.pageSize !== undefined) {
+            const from = options.page * options.pageSize;
+            const to = from + options.pageSize - 1;
+            query = query.range(from, to);
+        }
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data as Restaurant[];
+        return { data: data as Restaurant[], count: count || 0 };
     }
 
     static async getRestaurant(id: string) {

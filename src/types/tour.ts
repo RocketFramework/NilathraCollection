@@ -43,6 +43,13 @@ export interface TripProfile {
     };
 }
 
+export interface TripSummary {
+    totalCities: number;
+    totalDistanceKm: number;
+    totalActivities: number;
+    activityTypeMix: { [key: string]: number };
+}
+
 export interface FlightBooking {
     id: string;
     numberOfSeats: number;
@@ -207,4 +214,5 @@ export interface TripData {
     activities: ActivityBooking[];
     itinerary: InternalItineraryBlock[];
     financials: any; // Imported in index
+    summary?: TripSummary;
 }

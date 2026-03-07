@@ -237,6 +237,10 @@ export class TourService {
                 status: tripData.status,
                 start_date: tripData.profile?.arrivalDate || null,
                 end_date: tripData.profile?.departureDate || null,
+                total_km: tripData.summary?.totalDistanceKm || 0,
+                total_cities: tripData.summary?.totalCities || 0,
+                total_activities: tripData.summary?.totalActivities || 0,
+                activity_mix: tripData.summary?.activityTypeMix || {}
             })
             .eq('id', tourId);
 

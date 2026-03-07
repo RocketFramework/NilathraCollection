@@ -303,6 +303,52 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
         return { hotels, activities: acts, transport: trans, total: hotels + acts + trans };
     }, [tripData.itinerary, tripData.accommodations, masterData, tripData.profile, tripData.defaultDriverId, tripData.defaultVehicleId]);
 
+    const itinerarySummary = useMemo(() => {
+        const blocks = tripData.itinerary || [];
+
+        // 1. Total Distance (only from 'travel' blocks that have distance strings like "120 km")
+        const totalKm = blocks.reduce((sum, b) => {
+            if (b.type === 'travel' && b.distance) {
+                const num = parseInt(b.distance.replace(/[^0-9]/g, ''));
+                return sum + (isNaN(num) ? 0 : num);
+            }
+            return sum;
+        }, 0);
+
+        // 2. Total Cities/Districts (unique locationNames/districts)
+        const citySet = new Set<string>();
+        blocks.forEach(b => {
+            if (b.locationName) citySet.add(b.locationName.split(',')[0].trim());
+        });
+
+        // 3. Total Activities & Mix
+        let activityCount = 0;
+        const mix: { [key: string]: number } = {};
+
+        blocks.forEach(b => {
+            if (b.type === 'activity') {
+                activityCount++;
+                const masterAct = masterData.activities.find(ma => ma.id === b.activityId);
+                const category = masterAct?.category || 'General';
+                mix[category] = (mix[category] || 0) + 1;
+            }
+        });
+
+        return {
+            totalDistanceKm: totalKm,
+            totalCities: citySet.size,
+            totalActivities: activityCount,
+            activityTypeMix: mix
+        };
+    }, [tripData.itinerary, masterData.activities]);
+
+    // Sync summary to parent state
+    useEffect(() => {
+        if (JSON.stringify(tripData.summary) !== JSON.stringify(itinerarySummary)) {
+            updateData({ summary: itinerarySummary });
+        }
+    }, [itinerarySummary, tripData.summary, updateData]);
+
     // Sync calculated costs to financials if they differ
     useEffect(() => {
         if (!tripData.financials) return;
@@ -701,6 +747,47 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                         </button>
                     </div>
                 </div>
+
+                {/* Itinerary Summary Dashboard */}
+                {tripData.summary && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white p-4 rounded-2xl border border-brand-gold/10 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-orange-50 rounded-lg"><Navigation size={18} className="text-orange-500" /></div>
+                            <div>
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase">Total Distance</p>
+                                <p className="text-sm font-bold text-neutral-800">{tripData.summary.totalDistanceKm} KM</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-brand-gold/10 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-blue-50 rounded-lg"><MapPin size={18} className="text-blue-500" /></div>
+                            <div>
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase">Cities Visited</p>
+                                <p className="text-sm font-bold text-neutral-800">{tripData.summary.totalCities} Cities</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-brand-gold/10 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-green-50 rounded-lg"><ActivityIcon size={18} className="text-green-500" /></div>
+                            <div>
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase">Activities</p>
+                                <p className="text-sm font-bold text-neutral-800">{tripData.summary.totalActivities}</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-brand-gold/10 shadow-sm overflow-hidden">
+                            <p className="text-[10px] text-neutral-400 font-bold uppercase mb-2">Activity Mix</p>
+                            <div className="flex flex-wrap gap-1">
+                                {Object.entries(tripData.summary.activityTypeMix).length > 0 ? (
+                                    Object.entries(tripData.summary.activityTypeMix).map(([cat, count]) => (
+                                        <span key={cat} className="text-[9px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded-full font-bold">
+                                            {cat}: {count}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="text-[9px] text-neutral-400 italic">No activities assigned</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Assignment Defaults */}
                 {tripData.itinerary.length > 0 && (
@@ -1627,7 +1714,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                     <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{g.license_id ? `Lic: ${g.license_id}` : 'No License on File'}</p>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-sm font-black text-brand-green">${g.daily_rate || 0}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
+                                                                    <p className="text-sm font-black text-brand-green">${g.per_day_rate || 0}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
                                                                 </div>
                                                             </div>
 
@@ -1639,7 +1726,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                 </div>
                                                             )}
                                                         </button>
-                                                    )
+                                                    );
                                                 })}
                                             </div>
                                             <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
@@ -1699,6 +1786,6 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                     </div>
                 )
             }
-        </div >
+        </div>
     );
 }

@@ -68,14 +68,36 @@ export class HotelService {
     /**
      * Fetch all hotels
      */
-    static async getHotels() {
-        const { data, error } = await supabase
-            .from('hotels')
-            .select('*, payment_details(*)')
-            .order('name');
+    static async getHotels(options?: {
+        searchTerm?: string;
+        page?: number;
+        pageSize?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        client?: any;
+    }) {
+        const supabaseClient = options?.client || supabase;
+        let query = supabaseClient.from('hotels').select('*, hotel_rooms(*), payment_details(*)', { count: 'exact' });
 
+        if (options?.searchTerm) {
+            query = query.or(`name.ilike.%${options.searchTerm}%,location_address.ilike.%${options.searchTerm}%,closest_city.ilike.%${options.searchTerm}%`);
+        }
+
+        if (options?.sortBy) {
+            query = query.order(options.sortBy, { ascending: options.sortOrder !== 'desc' });
+        } else {
+            query = query.order('name');
+        }
+
+        if (options?.page !== undefined && options?.pageSize !== undefined) {
+            const from = options.page * options.pageSize;
+            const to = from + options.pageSize - 1;
+            query = query.range(from, to);
+        }
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data as Hotel[];
+        return { data: data as Hotel[], count: count || 0 };
     }
 
     /**

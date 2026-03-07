@@ -61,6 +61,15 @@ export function FinanceAndBookingStep({
         { label: 'Custom', type: 'custom', vendorType: 'other' },
     ];
 
+    const assignedSegments = useMemo(() => {
+        if (!editingPO || editingPO.vendor_type !== 'transport' || !editingPO.transport_provider_id) return [];
+        return tripData.itinerary.filter(block => {
+            if (block.type !== 'travel') return false;
+            const effectiveTransportId = block.transportId || tripData.defaultTransportId;
+            return effectiveTransportId === editingPO.transport_provider_id;
+        });
+    }, [editingPO?.transport_provider_id, editingPO?.vendor_type, tripData.itinerary, tripData.defaultTransportId]);
+
     const tourId = tripData.id;
 
     const loadPOs = async () => {
@@ -1292,144 +1301,208 @@ export function FinanceAndBookingStep({
                                         </button>
                                     </div>
                                     <div className="space-y-3">
-                                        {(editingPO?.items || []).map(item => (
-                                            <div key={item.id} className="p-5 bg-white rounded-[24px] border border-neutral-100 shadow-sm relative group/item">
-                                                <button
-                                                    onClick={() => editingPO && deleteLocalPOItem(item.id)}
-                                                    className="absolute -top-2 -right-2 p-1.5 bg-red-50 text-red-500 border border-red-100 rounded-full hover:bg-red-100 transition-all opacity-0 group-hover/item:opacity-100"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                                <div className="grid grid-cols-12 gap-4">
-                                                    <div className="col-span-12 md:col-span-8">
-                                                        <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Description</label>
+                                        {(editingPO?.items || []).map(item => {
+                                            const blockContext = tripData.itinerary.find(b => b.id === item.tour_itinerary_id);
+                                            const isTransportKm = editingPO?.vendor_type === 'transport' && blockContext?.transportRateType === 'km';
+                                            const distanceStr = blockContext?.distance || '';
 
-                                                        {editingPO?.vendor_type === 'transport' && editingPO?.transport_provider_id ? (
-                                                            <div className="space-y-2">
+                                            return (
+                                                <div key={item.id} className="p-5 bg-white rounded-[24px] border border-neutral-100 shadow-sm relative group/item">
+                                                    <button
+                                                        onClick={() => editingPO && deleteLocalPOItem(item.id)}
+                                                        className="absolute -top-2 -right-2 p-1.5 bg-red-50 text-red-500 border border-red-100 rounded-full hover:bg-red-100 transition-all opacity-0 group-hover/item:opacity-100"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                    <div className="grid grid-cols-12 gap-4">
+                                                        <div className="col-span-12 md:col-span-8">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <label className="text-[9px] text-neutral-400 uppercase font-black">
+                                                                    {editingPO?.vendor_type === 'transport' ? 'Segment Name' : 'Description'}
+                                                                </label>
+                                                                {blockContext?.dayNumber && (
+                                                                    <span className="text-[8px] font-black bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded uppercase">Day {blockContext.dayNumber}</span>
+                                                                )}
+                                                            </div>
+
+                                                            {editingPO?.vendor_type === 'transport' && editingPO?.transport_provider_id ? (
+                                                                <div className="space-y-2">
+                                                                    <div className="flex gap-2">
+                                                                        <div className="flex-1">
+                                                                            <label className="text-[8px] text-neutral-400 uppercase font-black mb-1 block">Link Itinerary Segment</label>
+                                                                            <select
+                                                                                value={item.tour_itinerary_id || ''}
+                                                                                onChange={(e) => {
+                                                                                    const segId = e.target.value;
+                                                                                    const seg = assignedSegments.find(s => s.id === segId);
+                                                                                    if (seg) {
+                                                                                        const isKm = seg.transportRateType === 'km';
+                                                                                        const dist = parseFloat(seg.distance?.replace(/[^0-9.]/g, '') || '0');
+                                                                                        updateLocalPOItem(item.id, {
+                                                                                            tour_itinerary_id: seg.id,
+                                                                                            day_number: seg.dayNumber,
+                                                                                            description: seg.name,
+                                                                                            quantity: isKm ? (dist || 1) : 1
+                                                                                        });
+                                                                                    } else {
+                                                                                        updateLocalPOItem(item.id, { tour_itinerary_id: undefined });
+                                                                                    }
+                                                                                }}
+                                                                                className="w-full text-[10px] font-bold bg-white border border-neutral-200 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold"
+                                                                            >
+                                                                                <option value="">-- No Segment Linked --</option>
+                                                                                {assignedSegments.map((seg) => (
+                                                                                    <option key={seg.id} value={seg.id}>Day {seg.dayNumber}: {seg.name} ({seg.distance || '0 km'})</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <input
+                                                                        value={item.description}
+                                                                        onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                        className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                        placeholder="e.g., Airport Transfer / Negombo to Sigiriya"
+                                                                    />
+                                                                    <select
+                                                                        value={item.vehicle_type ? masterTransports.find(t => t.id === editingPO?.transport_provider_id)?.transport_vehicles?.findIndex((v: any) => v.vehicle_type === item.vehicle_type && (v.day_rate === item.unit_price || v.km_rate === item.unit_price)) : ''}
+                                                                        onChange={(e) => {
+                                                                            const idx = parseInt(e.target.value);
+                                                                            if (isNaN(idx)) {
+                                                                                updateLocalPOItem(item.id, { vehicle_type: '' });
+                                                                                return;
+                                                                            }
+                                                                            const provider = masterTransports.find(t => t.id === editingPO?.transport_provider_id);
+                                                                            const vehicle = provider?.transport_vehicles?.[idx];
+                                                                            if (vehicle && editingPO) {
+                                                                                const rateType = blockContext?.transportRateType || 'day';
+                                                                                const distanceVal = parseFloat(blockContext?.distance?.replace(/[^0-9.]/g, '') || '0');
+                                                                                const unitPrice = rateType === 'km' ? vehicle.km_rate : vehicle.day_rate;
+
+                                                                                updateLocalPOItem(item.id, {
+                                                                                    vehicle_type: vehicle.vehicle_type,
+                                                                                    unit_price: unitPrice || 0,
+                                                                                    quantity: (rateType === 'km' && distanceVal) ? distanceVal : (item.quantity || 1)
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
+                                                                    >
+                                                                        <option value="">-- Select Vehicle (Day vs KM rates) --</option>
+                                                                        {masterTransports.find(t => t.id === editingPO?.transport_provider_id)?.transport_vehicles?.map((v: any, i: number) => (
+                                                                            <option key={i} value={i}>
+                                                                                {v.vehicle_type} (LKR {v.day_rate?.toLocaleString()}/day | {v.km_rate}/km)
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            ) : editingPO?.vendor_type === 'hotel' && editingPO?.hotel_id ? (
+                                                                <div className="space-y-2">
+                                                                    <input
+                                                                        value={item.description}
+                                                                        onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                        className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                        placeholder="Custom room description"
+                                                                    />
+                                                                    <select
+                                                                        value={item.room_type ? masterHotels.find(h => h.id === editingPO?.hotel_id)?.hotel_rooms?.findIndex((r: any) => r.room_name === item.room_type && (r.summer_bb_rate === item.unit_price || r.winter_bb_rate === item.unit_price)) : ''}
+                                                                        onChange={(e) => {
+                                                                            const idx = parseInt(e.target.value);
+                                                                            if (isNaN(idx)) {
+                                                                                updateLocalPOItem(item.id, { room_type: '' });
+                                                                                return;
+                                                                            }
+                                                                            const provider = masterHotels.find(h => h.id === editingPO?.hotel_id);
+                                                                            const room = provider?.hotel_rooms?.[idx];
+                                                                            if (room && editingPO) {
+                                                                                updateLocalPOItem(item.id, {
+                                                                                    room_type: room.room_name,
+                                                                                    unit_price: room.summer_bb_rate || room.winter_bb_rate || 0,
+                                                                                    description: `1x ${room.room_name}`
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
+                                                                    >
+                                                                        <option value="">-- Select Room from Hotel --</option>
+                                                                        {masterHotels.find(h => h.id === editingPO?.hotel_id)?.hotel_rooms?.map((r: any, i: number) => (
+                                                                            <option key={i} value={i}>{r.room_name} (LKR {(r.summer_bb_rate || r.winter_bb_rate || 0).toLocaleString()}/night)</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            ) : editingPO?.vendor_type === 'guide' && editingPO?.guide_id ? (
+                                                                <div className="space-y-2">
+                                                                    <input
+                                                                        value={item.description}
+                                                                        onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                        className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
+                                                                        placeholder="Custom guide description"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const provider = masterGuides.find(g => g.id === editingPO?.guide_id);
+                                                                            if (provider && provider.per_day_rate && editingPO) {
+                                                                                updateLocalPOItem(item.id, {
+                                                                                    unit_price: provider.per_day_rate,
+                                                                                    description: 'Guide Services - Daily Rate'
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="w-full text-xs font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/30 rounded-xl px-3 py-1.5 hover:bg-brand-gold hover:text-white transition-colors"
+                                                                    >
+                                                                        Apply Guide Daily Rate (LKR {masterGuides.find(g => g.id === editingPO?.guide_id)?.per_day_rate?.toLocaleString() || '0'})
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
                                                                 <input
                                                                     value={item.description}
-                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                    onChange={(e) => updateLocalPOItem(item.id, { description: e.target.value })}
                                                                     className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                                    placeholder="Custom transport description"
+                                                                    placeholder="Item Description"
                                                                 />
-                                                                <select
-                                                                    value={item.vehicle_type || ''}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value;
-                                                                        const provider = masterTransports.find(t => t.id === editingPO?.transport_provider_id);
-                                                                        const vehicle = provider?.vehicles?.find((v: any) => v.type === val);
-                                                                        if (vehicle && editingPO) {
-                                                                            updateLocalPOItem(item.id, {
-                                                                                vehicle_type: vehicle.type,
-                                                                                unit_price: vehicle.day_rate,
-                                                                                description: `${vehicle.type} - Daily Rate`
-                                                                            });
-                                                                        } else if (val === '' && editingPO) {
-                                                                            updateLocalPOItem(item.id, { vehicle_type: '' });
-                                                                        }
-                                                                    }}
-                                                                    className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
-                                                                >
-                                                                    <option value="">-- Select Vehicle from Provider --</option>
-                                                                    {masterTransports.find(t => t.id === editingPO?.transport_provider_id)?.vehicles?.map((v: any, i: number) => (
-                                                                        <option key={i} value={v.type}>{v.type} (LKR {v.day_rate.toLocaleString()}/day)</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        ) : editingPO?.vendor_type === 'hotel' && editingPO?.hotel_id ? (
-                                                            <div className="space-y-2">
-                                                                <input
-                                                                    value={item.description}
-                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
-                                                                    className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                                    placeholder="Custom room description"
-                                                                />
-                                                                <select
-                                                                    value={item.room_type || ''}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value;
-                                                                        const provider = masterHotels.find(h => h.id === editingPO?.hotel_id);
-                                                                        const room = provider?.rooms?.find((r: any) => r.type === val);
-                                                                        if (room && editingPO) {
-                                                                            updateLocalPOItem(item.id, {
-                                                                                room_type: room.type,
-                                                                                unit_price: room.price_per_night,
-                                                                                description: `1x ${room.type}`
-                                                                            });
-                                                                        } else if (val === '' && editingPO) {
-                                                                            updateLocalPOItem(item.id, { room_type: '' });
-                                                                        }
-                                                                    }}
-                                                                    className="w-full text-xs font-bold bg-white border border-brand-gold/30 rounded-xl px-3 py-1.5 focus:ring-1 focus:ring-brand-gold text-brand-green"
-                                                                >
-                                                                    <option value="">-- Select Room from Hotel --</option>
-                                                                    {masterHotels.find(h => h.id === editingPO?.hotel_id)?.rooms?.map((r: any, i: number) => (
-                                                                        <option key={i} value={r.type}>{r.type} (LKR {r.price_per_night.toLocaleString()}/night)</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        ) : editingPO?.vendor_type === 'guide' && editingPO?.guide_id ? (
-                                                            <div className="space-y-2">
-                                                                <input
-                                                                    value={item.description}
-                                                                    onChange={(e) => editingPO && updateLocalPOItem(item.id, { description: e.target.value })}
-                                                                    className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                                    placeholder="Custom guide description"
-                                                                />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const provider = masterGuides.find(g => g.id === editingPO?.guide_id);
-                                                                        if (provider && provider.per_day_rate && editingPO) {
-                                                                            updateLocalPOItem(item.id, {
-                                                                                unit_price: provider.per_day_rate,
-                                                                                description: 'Guide Services - Daily Rate'
-                                                                            });
-                                                                        }
-                                                                    }}
-                                                                    className="w-full text-xs font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/30 rounded-xl px-3 py-1.5 hover:bg-brand-gold hover:text-white transition-colors"
-                                                                >
-                                                                    Apply Guide Daily Rate (LKR {masterGuides.find(g => g.id === editingPO?.guide_id)?.per_day_rate?.toLocaleString() || '0'})
-                                                                </button>
-                                                            </div>
-                                                        ) : (
+                                                            )}
+                                                        </div>
+                                                        <div className="col-span-12 md:col-span-4">
+                                                            <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Service Date</label>
                                                             <input
-                                                                value={item.description}
-                                                                onChange={(e) => updateLocalPOItem(item.id, { description: e.target.value })}
+                                                                type="date"
+                                                                value={item.service_date || ""}
+                                                                onChange={(e) => updateLocalPOItem(item.id, { service_date: e.target.value })}
                                                                 className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                                placeholder="Item Description"
                                                             />
-                                                        )}
-                                                    </div>
-                                                    <div className="col-span-12 md:col-span-4">
-                                                        <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Service Date</label>
-                                                        <input
-                                                            type="date"
-                                                            value={item.service_date || ""}
-                                                            onChange={(e) => updateLocalPOItem(item.id, { service_date: e.target.value })}
-                                                            className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold"
-                                                        />
-                                                    </div>
-                                                    <div className="col-span-4">
-                                                        <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Qty</label>
-                                                        <input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => updateLocalPOItem(item.id, { quantity: Number(e.target.value) })}
-                                                            className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-center"
-                                                        />
-                                                    </div>
-                                                    <div className="col-span-8">
-                                                        <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Unit Price (LKR)</label>
-                                                        <input
-                                                            type="number"
-                                                            value={item.unit_price}
-                                                            onChange={(e) => updateLocalPOItem(item.id, { unit_price: Number(e.target.value) })}
-                                                            className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-right"
-                                                        />
+                                                        </div>
+                                                        <div className="col-span-4 relative group">
+                                                            <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">
+                                                                Qty {isTransportKm && <span className="text-blue-500 ml-1">(KM)</span>}
+                                                            </label>
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="number"
+                                                                    value={item.quantity}
+                                                                    onChange={(e) => updateLocalPOItem(item.id, { quantity: Number(e.target.value) })}
+                                                                    className={`w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-center ${isTransportKm ? 'text-blue-600' : ''}`}
+                                                                />
+                                                                {distanceStr && (
+                                                                    <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                                                                        <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                            {distanceStr}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-span-8">
+                                                            <label className="text-[9px] text-neutral-400 uppercase font-black mb-1 block">Unit Price (LKR)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={item.unit_price}
+                                                                onChange={(e) => updateLocalPOItem(item.id, { unit_price: Number(e.target.value) })}
+                                                                className="w-full text-sm font-bold bg-neutral-50 border-none rounded-xl px-4 py-2 focus:ring-1 focus:ring-brand-gold text-right"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 

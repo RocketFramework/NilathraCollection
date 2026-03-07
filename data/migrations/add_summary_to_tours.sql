@@ -1,0 +1,5 @@
+ALTER TABLE tours 
+ADD COLUMN total_km NUMERIC(10, 2) DEFAULT 0,
+ADD COLUMN total_cities INTEGER DEFAULT 0,
+ADD COLUMN total_activities INTEGER DEFAULT 0,
+ADD COLUMN activity_mix JSONB DEFAULT '{}'::jsonb;

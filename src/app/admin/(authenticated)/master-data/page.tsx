@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Edit2, Trash2, Building2, Car, Compass, UserCircle, Utensils } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, X, ChevronLeft, ChevronRight, Building2, Car, Compass, UserCircle, Utensils } from "lucide-react";
 import { MasterDataService, Vendor, Driver, TourGuide, TransportProvider, Restaurant } from "@/services/master-data.service";
 import { HotelService, Hotel } from "@/services/hotel.service";
 import HotelFormModal from "./components/HotelFormModal";
@@ -23,6 +23,7 @@ const DATABASES = [
 export default function MasterDataPage() {
     const [activeTab, setActiveTab] = useState(DATABASES[0].id);
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -32,6 +33,11 @@ export default function MasterDataPage() {
     const [transports, setTransports] = useState<TransportProvider[]>([]);
 
     const [loading, setLoading] = useState(true);
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [sortBy, setSortBy] = useState<string>('name');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Modal State
     const [isHotelModalOpen, setIsHotelModalOpen] = useState(false);
@@ -52,31 +58,63 @@ export default function MasterDataPage() {
     const [isRestaurantModalOpen, setIsRestaurantModalOpen] = useState(false);
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setCurrentPage(0); // Reset to first page on search
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        setCurrentPage(0);
+        if (activeTab === 'drivers' || activeTab === 'guides') {
+            setSortBy('first_name');
+        } else {
+            setSortBy('name');
+        }
+    }, [activeTab]);
+
     useEffect(() => {
         loadData();
-    }, [activeTab]);
+    }, [activeTab, debouncedSearch, currentPage, pageSize, sortBy, sortOrder]);
 
     const loadData = async () => {
         setLoading(true);
         try {
+            const options = {
+                searchTerm: debouncedSearch,
+                page: currentPage,
+                pageSize,
+                sortBy,
+                sortOrder
+            };
+
             if (activeTab === 'hotels') {
-                const data = await HotelService.getHotels();
+                const { data, count } = await HotelService.getHotels(options);
                 setHotels(data);
+                setTotalCount(count);
             } else if (activeTab === 'vendors') {
-                const data = await MasterDataService.getVendors();
+                const { data, count } = await MasterDataService.getVendors(options);
                 setVendors(data);
+                setTotalCount(count);
             } else if (activeTab === 'restaurants') {
-                const data = await MasterDataService.getRestaurants();
+                const { data, count } = await MasterDataService.getRestaurants(options);
                 setRestaurants(data);
+                setTotalCount(count);
             } else if (activeTab === 'transports') {
-                const data = await MasterDataService.getTransportProviders();
+                const { data, count } = await MasterDataService.getTransportProviders(options);
                 setTransports(data);
+                setTotalCount(count);
             } else if (activeTab === 'drivers') {
-                const data = await MasterDataService.getDrivers();
+                const { data, count } = await MasterDataService.getDrivers(options);
                 setDrivers(data);
+                setTotalCount(count);
             } else if (activeTab === 'guides') {
-                const data = await MasterDataService.getTourGuides();
+                const { data, count } = await MasterDataService.getTourGuides(options);
                 setGuides(data);
+                setTotalCount(count);
             }
         } catch (error) {
             console.error("Failed to load data:", error);
@@ -155,36 +193,22 @@ export default function MasterDataPage() {
         }
     };
 
-    const filteredHotels = hotels.filter(h =>
-        h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (h.location_address && h.location_address.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (h.closest_city && h.closest_city.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const toggleSort = (field: string) => {
+        if (sortBy === field) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('asc');
+        }
+        setCurrentPage(0);
+    };
 
-    const filteredVendors = vendors.filter(v =>
-        v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (v.phone && v.phone.includes(searchQuery))
-    );
+    const totalPages = Math.ceil(totalCount / pageSize);
 
-    const filteredRestaurants = restaurants.filter(r =>
-        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (r.contact_number && r.contact_number.includes(searchQuery)) ||
-        (r.address && r.address.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-
-    const filteredTransports = transports.filter(t =>
-        t.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const filteredDrivers = drivers.filter(d =>
-        d.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (d.last_name && d.last_name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-
-    const filteredGuides = guides.filter(g =>
-        g.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (g.last_name && g.last_name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const renderSortIcon = (field: string) => {
+        if (sortBy !== field) return <Search size={10} className="ml-1 opacity-0 group-hover:opacity-50" />;
+        return sortOrder === 'asc' ? <span className="ml-1">↑</span> : <span className="ml-1">↓</span>;
+    };
 
     return (
         <div className="max-w-7xl mx-auto p-10 animate-in fade-in duration-500">
@@ -237,9 +261,23 @@ export default function MasterDataPage() {
                             <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-wider font-bold text-neutral-500">
                                 <th className="p-4 pl-6">Identifier name</th>
                                 <th className="p-4">Category</th>
-                                <th className="p-4">Location / Zone</th>
-                                <th className="p-4 text-center">Status</th>
-                                <th className="p-4 pr-6 text-right">Actions</th>
+                                <th onClick={() => toggleSort(activeTab === 'drivers' || activeTab === 'guides' ? 'first_name' : 'name')} className="p-4 pl-6 text-left text-[10px] uppercase font-black text-neutral-400 tracking-widest cursor-pointer group hover:text-brand-green">
+                                    <div className="flex items-center">
+                                        {activeTab === 'drivers' || activeTab === 'guides' ? 'Full Name' : (activeTab === 'hotels' ? 'Hotel Name' : 'Name')}
+                                        {renderSortIcon(activeTab === 'drivers' || activeTab === 'guides' ? 'first_name' : 'name')}
+                                    </div>
+                                </th>
+                                <th className="p-4 text-left text-[10px] uppercase font-black text-neutral-400 tracking-widest">Category</th>
+                                <th className="p-4 text-left text-[10px] uppercase font-black text-neutral-400 tracking-widest">
+                                    {activeTab === 'hotels' ? 'Rooms' : (activeTab === 'vendors' ? 'Phone' : (activeTab === 'restaurants' ? 'Cuisine / Phone' : (activeTab === 'transports' ? 'Vehicles' : 'Contact')))}
+                                </th>
+                                <th onClick={() => toggleSort('is_suspended')} className="p-4 text-center text-[10px] uppercase font-black text-neutral-400 tracking-widest cursor-pointer group hover:text-brand-green">
+                                    <div className="flex items-center justify-center">
+                                        Status
+                                        {renderSortIcon('is_suspended')}
+                                    </div>
+                                </th>
+                                <th className="p-4 pr-6 text-right text-[10px] uppercase font-black text-neutral-400 tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 text-sm text-brand-charcoal font-medium">
@@ -248,12 +286,12 @@ export default function MasterDataPage() {
                                     <tr>
                                         <td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td>
                                     </tr>
-                                ) : filteredHotels.length === 0 ? (
+                                ) : hotels.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td>
                                     </tr>
                                 ) : (
-                                    filteredHotels.map(row => (
+                                    hotels.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.name}</td>
                                             <td className="p-4 text-neutral-500">{row.hotel_class || 'Not Specified'}</td>
@@ -279,10 +317,10 @@ export default function MasterDataPage() {
                             ) : activeTab === 'vendors' ? (
                                 loading ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td></tr>
-                                ) : filteredVendors.length === 0 ? (
+                                ) : vendors.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td></tr>
                                 ) : (
-                                    filteredVendors.map(row => (
+                                    vendors.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.name}</td>
                                             <td className="p-4 text-neutral-500">Vendor</td>
@@ -304,10 +342,10 @@ export default function MasterDataPage() {
                             ) : activeTab === 'restaurants' ? (
                                 loading ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td></tr>
-                                ) : filteredRestaurants.length === 0 ? (
+                                ) : restaurants.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td></tr>
                                 ) : (
-                                    filteredRestaurants.map(row => (
+                                    restaurants.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.name}</td>
                                             <td className="p-4 text-neutral-500">Restaurant</td>
@@ -329,10 +367,10 @@ export default function MasterDataPage() {
                             ) : activeTab === 'drivers' ? (
                                 loading ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td></tr>
-                                ) : filteredDrivers.length === 0 ? (
+                                ) : drivers.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td></tr>
                                 ) : (
-                                    filteredDrivers.map(row => (
+                                    drivers.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.first_name} {row.last_name || ''}</td>
                                             <td className="p-4 text-neutral-500">Driver</td>
@@ -354,10 +392,10 @@ export default function MasterDataPage() {
                             ) : activeTab === 'transports' ? (
                                 loading ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td></tr>
-                                ) : filteredTransports.length === 0 ? (
+                                ) : transports.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td></tr>
                                 ) : (
-                                    filteredTransports.map(row => (
+                                    transports.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.name}</td>
                                             <td className="p-4 text-neutral-500">Transport Provider</td>
@@ -379,10 +417,10 @@ export default function MasterDataPage() {
                             ) : activeTab === 'guides' ? (
                                 loading ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">Loading records...</td></tr>
-                                ) : filteredGuides.length === 0 ? (
+                                ) : guides.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-neutral-500 font-bold">No records found.</td></tr>
                                 ) : (
-                                    filteredGuides.map(row => (
+                                    guides.map(row => (
                                         <tr key={row.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="p-4 pl-6 font-bold">{row.first_name} {row.last_name || ''}</td>
                                             <td className="p-4 text-neutral-500">Tour Guide</td>
@@ -406,6 +444,67 @@ export default function MasterDataPage() {
                             )}
                         </tbody>
                     </table>
+                    {/* Pagination Footer */}
+                    <div className="p-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between">
+                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest pl-2">
+                            Showing {Math.min(totalCount, currentPage * pageSize + 1)} to {Math.min(totalCount, (currentPage + 1) * pageSize)} of {totalCount} records
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                                disabled={currentPage === 0}
+                                className="p-2 rounded-lg hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft size={18} />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    // Simple sliding window for page numbers
+                                    let pageNum = i;
+                                    if (totalPages > 5) {
+                                        if (currentPage > 2) pageNum = currentPage - 2 + i;
+                                        if (pageNum >= totalPages) pageNum = totalPages - 5 + i;
+                                        if (pageNum < 0) pageNum = i;
+                                    }
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? 'bg-brand-green text-white shadow-md' : 'text-neutral-500 hover:bg-neutral-200'}`}
+                                        >
+                                            {pageNum + 1}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={currentPage >= totalPages - 1}
+                                className="p-2 rounded-lg hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 pr-2">
+                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Rows per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setCurrentPage(0);
+                                }}
+                                className="bg-transparent text-xs font-bold text-neutral-600 outline-none cursor-pointer"
+                            >
+                                {[10, 25, 50, 100].map(size => (
+                                    <option key={size} value={size}>{size}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
