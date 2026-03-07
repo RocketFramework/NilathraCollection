@@ -9,7 +9,7 @@ interface HotelFormModalProps {
     onSave: () => void;
 }
 
-const TABS = ["Basic Info", "Contacts", "Amenities", "Recreations", "Rooms", "Payment Details"];
+const TABS = ["Basic Info", "Contacts", "Amenities", "Recreations", "Rooms", "Policies", "Payment Details"];
 
 const ROOM_STANDARDS = [
     "Budget - 3 Star",
@@ -52,6 +52,10 @@ export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: Hotel
         parking: false,
         internet: false,
         airport_shuttle: false,
+        child_free_until_age: 6,
+        child_half_price_until_age: 12,
+        child_half_price_percentage: 50,
+        child_policy_notes: "",
         rooms: [],
         recreations: [],
         payment_details: {}
@@ -69,6 +73,7 @@ export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: Hotel
                     sales_agent_name: "", sales_agent_contact: "", reservation_agent_name: "", reservation_agent_contact: "",
                     gm_name: "", gm_contact: "", disable_support: "none", outdoor_pool: false, wellness: false,
                     business_facility: false, parking: false, internet: false, airport_shuttle: false,
+                    child_free_until_age: 6, child_half_price_until_age: 12, child_half_price_percentage: 50, child_policy_notes: "",
                     rooms: [], recreations: [], payment_details: {}
                 });
             }
@@ -478,6 +483,82 @@ export default function HotelFormModal({ isOpen, onClose, hotel, onSave }: Hotel
                             >
                                 <Plus size={18} /> Add Room Strategy
                             </button>
+                        </div>
+                    )}
+                    {activeTab === "Policies" && (
+                        <div className="space-y-8">
+                            <div className="bg-brand-green/5 border border-brand-green/20 rounded-2xl p-6">
+                                <h3 className="text-lg font-bold text-brand-charcoal mb-4 flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-brand-green text-white flex items-center justify-center text-sm">1</span>
+                                    Child Policy Configuration
+                                </h3>
+                                <p className="text-sm text-neutral-600 mb-6"> Configure how children are priced at this hotel. These values will be used for automated cost calculations. </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="border border-neutral-200 rounded-xl px-4 py-3 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all bg-white">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">Free Stay Until Age</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="18"
+                                                className="w-full outline-none text-brand-charcoal font-bold text-lg"
+                                                value={formData.child_free_until_age ?? 6}
+                                                onChange={e => handleChange('child_free_until_age', parseInt(e.target.value) || 0)}
+                                            />
+                                            <span className="text-neutral-400 font-medium">Years</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="border border-neutral-200 rounded-xl px-4 py-3 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all bg-white">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">Half Price Until Age</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="18"
+                                                className="w-full outline-none text-brand-charcoal font-bold text-lg"
+                                                value={formData.child_half_price_until_age ?? 12}
+                                                onChange={e => handleChange('child_half_price_until_age', parseInt(e.target.value) || 0)}
+                                            />
+                                            <span className="text-neutral-400 font-medium">Years</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="border border-neutral-200 rounded-xl px-4 py-3 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all bg-white">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">Half Price Percentage</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                className="w-full outline-none text-brand-charcoal font-bold text-lg"
+                                                value={formData.child_half_price_percentage ?? 50}
+                                                onChange={e => handleChange('child_half_price_percentage', parseInt(e.target.value) || 0)}
+                                            />
+                                            <span className="text-neutral-400 font-medium">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl flex gap-3 italic text-xs text-amber-700">
+                                    <div className="font-bold flex-shrink-0">Note:</div>
+                                    <div>
+                                        Children above {formData.child_half_price_until_age || 12} years will be charged at the full adult rate automatically.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border border-neutral-200 rounded-xl px-4 py-3 focus-within:border-brand-green focus-within:ring-1 focus-within:ring-brand-green transition-all bg-white">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-2">Detailed Policy Notes / Terms</label>
+                                <textarea
+                                    rows={6}
+                                    className="w-full outline-none text-brand-charcoal font-medium resize-none"
+                                    placeholder="Enter any additional child policy details, extra bed charges, or special terms..."
+                                    value={formData.child_policy_notes || ''}
+                                    onChange={e => handleChange('child_policy_notes', e.target.value)}
+                                />
+                            </div>
                         </div>
                     )}
 

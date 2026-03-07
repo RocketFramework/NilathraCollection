@@ -570,7 +570,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                             stayClass: hotel.hotel_class || acc.stayClass,
                             address: hotel.location_address || acc.address,
                             // Clear room specific selections if switching to a different hotel
-                            ...(acc.hotelId !== hotel.id ? { roomStandard: '', mealPlan: undefined, pricePerNight: 0 } : {})
+                            ...(acc.hotelId !== hotel.id ? { roomId: undefined, roomName: '', roomStandard: '', mealPlan: undefined, pricePerNight: 0 } : {})
                         };
                     }
                     return acc;
@@ -622,8 +622,8 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
             const h = masterData.hotels.find(x => x.id === block.hotelId);
             const acc = tripData.accommodations.find(a => a.nightIndex === block.dayNumber);
             let label = h?.name || 'Linked Hotel';
-            if (acc?.roomStandard) {
-                label += ` - ${acc.roomStandard}`;
+            if (acc?.roomName || acc?.roomStandard) {
+                label += ` - ${acc.roomName || acc.roomStandard}`;
                 if (acc.mealPlan) label += ` (${acc.mealPlan})`;
                 if ((acc.numberOfRooms || 1) > 1) label += ` [x${acc.numberOfRooms}]`;
             }
@@ -1101,209 +1101,188 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                 </div>
 
                                 <div className="divide-y border rounded-2xl overflow-hidden shadow-sm bg-white">
-                                    {activeAssignment.type === 'sleep' && (
-                                        <>
-                                            <div className="grid grid-cols-1 gap-4 mt-4">
-                                                {(filteredMasterData as any[]).map(h => {
-                                                    const assignedHotelId = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.hotelId;
-                                                    const isSelected = assignedHotelId === h.id;
+                                    {activeAssignment.type === 'sleep' && (() => {
+                                        const activeBlock = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                        const dayNumber = activeBlock?.dayNumber || 1;
+                                        let stayDate = "";
+                                        if (tripData.profile?.arrivalDate) {
+                                            const d = new Date(tripData.profile.arrivalDate);
+                                            d.setDate(d.getDate() + (dayNumber - 1));
+                                            stayDate = d.toISOString().split('T')[0];
+                                        }
 
-                                                    // Calculate a "Starting From" price for the collapsed view
-                                                    const rooms = h.hotel_rooms || [];
-                                                    const rates = rooms.flatMap((r: any) => [r.summer_bb_rate, r.winter_bb_rate].filter((rate: any) => rate && rate > 0));
-                                                    const minRate = rates.length > 0 ? Math.min(...rates) : (h.base_rate || 0);
+                                        return (
+                                            <>
+                                                <div className="grid grid-cols-1 gap-4 p-4">
+                                                    {(filteredMasterData as any[]).map(h => {
+                                                        const assignedHotelId = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.hotelId;
+                                                        const isSelected = assignedHotelId === h.id;
 
-                                                    const amenities = [
-                                                        { key: 'internet', icon: <Wifi size={12} />, label: 'WiFi' },
-                                                        { key: 'outdoor_pool', icon: <Waves size={12} />, label: 'Pool' },
-                                                        { key: 'wellness', icon: <HeartPulse size={12} />, label: 'Spa' },
-                                                        { key: 'business_facility', icon: <Briefcase size={12} />, label: 'Business' },
-                                                        { key: 'airport_shuttle', icon: <Plane size={12} />, label: 'Shuttle' },
-                                                        { key: 'parking', icon: <CarIcon size={12} />, label: 'Parking' },
-                                                    ].filter(a => h[a.key]);
+                                                        const rooms = h.hotel_rooms || [];
+                                                        const applicableRates = rooms.map((r: any) => {
+                                                            if (stayDate && r.summer_start_date && r.summer_end_date && stayDate >= r.summer_start_date && stayDate <= r.summer_end_date) {
+                                                                return r.summer_bb_rate;
+                                                            }
+                                                            if (stayDate && r.winter_start_date && r.winter_end_date && stayDate >= r.winter_start_date && stayDate <= r.winter_end_date) {
+                                                                return r.winter_bb_rate;
+                                                            }
+                                                            return r.summer_bb_rate || r.winter_bb_rate;
+                                                        }).filter((rate: any) => rate && rate > 0);
 
-                                                    return (
-                                                        <div key={h.id} className="space-y-3">
-                                                            <button key={h.id} onClick={() => bindProvider(activeAssignment.blockId, 'hotelId', h.id)}
-                                                                className={`w-full p-4 rounded-xl border text-left transition-all flex flex-col gap-3 ${isSelected ? 'border-brand-gold bg-brand-gold/5 outline outline-2 outline-brand-gold/20' : 'border-neutral-200 bg-white hover:border-brand-gold/50'}`}>
-                                                                <div className="flex justify-between items-start w-full">
-                                                                    <div className="flex-1 min-w-0 pr-4">
-                                                                        <p className="font-bold text-sm text-neutral-800 truncate" title={h.name}>{h.name}</p>
-                                                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                                                            <MapPin size={10} className="text-neutral-400" />
-                                                                            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-tight">
-                                                                                {h.closest_city || 'Sri Lanka'} • {h.hotel_class || 'Standard'}
-                                                                            </p>
-                                                                        </div>
+                                                        const minRate = applicableRates.length > 0 ? Math.min(...applicableRates) : (h.base_rate || 0);
 
-                                                                        {amenities.length > 0 && (
-                                                                            <div className="flex gap-2 mt-2">
-                                                                                {amenities.map(a => (
-                                                                                    <div key={a.key} className="text-neutral-400 p-1 bg-neutral-100 rounded" title={a.label}>
-                                                                                        {a.icon}
-                                                                                    </div>
-                                                                                ))}
+                                                        const amenities = [
+                                                            { key: 'internet', icon: <Wifi size={12} />, label: 'WiFi' },
+                                                            { key: 'outdoor_pool', icon: <Waves size={12} />, label: 'Pool' },
+                                                            { key: 'wellness', icon: <HeartPulse size={12} />, label: 'Spa' },
+                                                            { key: 'business_facility', icon: <Briefcase size={12} />, label: 'Business' },
+                                                            { key: 'airport_shuttle', icon: <Plane size={12} />, label: 'Shuttle' },
+                                                            { key: 'parking', icon: <CarIcon size={12} />, label: 'Parking' },
+                                                        ].filter(a => h[a.key]);
+
+                                                        return (
+                                                            <div key={h.id} className="space-y-3">
+                                                                <button onClick={() => bindProvider(activeAssignment.blockId, 'hotelId', h.id)}
+                                                                    className={`w-full p-4 rounded-xl border text-left transition-all flex flex-col gap-3 ${isSelected ? 'border-brand-gold bg-brand-gold/5 outline outline-2 outline-brand-gold/20' : 'border-neutral-200 bg-white hover:border-brand-gold/50'}`}>
+                                                                    <div className="flex justify-between items-start w-full">
+                                                                        <div className="flex-1 min-w-0 pr-4">
+                                                                            <p className="font-bold text-sm text-neutral-800 truncate">{h.name}</p>
+                                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                                <MapPin size={10} className="text-neutral-400" />
+                                                                                <span className="text-[10px] text-neutral-500 font-medium">{h.closest_city}</span>
                                                                             </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-right shrink-0">
-                                                                        <p className="text-[9px] text-neutral-400 font-bold uppercase leading-none mb-1">{isSelected ? 'Active' : 'From'}</p>
-                                                                        <p className="text-sm font-black text-brand-green">${minRate}<span className="text-[10px] text-neutral-400 font-normal">/nt</span></p>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-
-                                                            {/* Room Selection Matrix */}
-                                                            {isSelected && rooms.length > 0 && (
-                                                                <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-100 mx-2 space-y-4">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <h5 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Available Room Types & Rates</h5>
-                                                                        <div className="flex gap-3 text-[9px] font-bold">
-                                                                            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-brand-gold" /> Summer</span>
-                                                                            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Winter</span>
+                                                                        </div>
+                                                                        <div className="text-right flex flex-col items-end">
+                                                                            <span className="text-[9px] font-black text-brand-gold uppercase tracking-tighter">Starting From</span>
+                                                                            <span className="text-sm font-black text-brand-charcoal">${minRate}</span>
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-1 gap-3">
-                                                                        {rooms.map((roomValue: any) => {
-                                                                            const acc = tripData.accommodations.find(a => a.nightIndex === (tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.dayNumber));
-                                                                            const isThisRoom = acc?.roomStandard === roomValue.room_name;
-
-                                                                            const mealPlans = [
-                                                                                { id: 'BB', label: 'Bed & Breakfast', summer: roomValue.summer_bb_rate, winter: roomValue.winter_bb_rate },
-                                                                                { id: 'HB', label: 'Half Board', summer: roomValue.summer_hb_rate, winter: roomValue.winter_hb_rate },
-                                                                                { id: 'FB', label: 'Full Board', summer: roomValue.summer_fb_rate, winter: roomValue.winter_fb_rate },
-                                                                            ].filter(m => m.summer > 0 || m.winter > 0);
-
-                                                                            return (
-                                                                                <div key={roomValue.id} className={`p-3 rounded-xl border ${isThisRoom ? 'bg-white border-brand-gold shadow-sm' : 'bg-white/50 border-neutral-100'} transition-all`}>
-                                                                                    <div className="flex justify-between items-center mb-2">
-                                                                                        <p className="text-xs font-bold text-neutral-800">{roomValue.room_name}</p>
-                                                                                        <span className="text-[9px] text-neutral-400 font-mono">Max {roomValue.max_guests} Pax</span>
-                                                                                    </div>
-
-                                                                                    <div className="grid grid-cols-1 gap-1.5">
-                                                                                        {mealPlans.map(mp => (
-                                                                                            <div key={mp.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-neutral-100/50 group/rate">
-                                                                                                <span className="text-[10px] text-neutral-600 font-medium">{mp.label}</span>
-                                                                                                <div className="flex gap-2">
-                                                                                                    {mp.summer > 0 && (
-                                                                                                        <button
-                                                                                                            onClick={() => {
-                                                                                                                const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                                                                                if (!block) return;
-                                                                                                                updateData({
-                                                                                                                    accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
-                                                                                                                        ...a,
-                                                                                                                        roomStandard: roomValue.room_name,
-                                                                                                                        mealPlan: mp.id as any,
-                                                                                                                        pricePerNight: mp.summer
-                                                                                                                    } : a)
-                                                                                                                });
-                                                                                                            }}
-                                                                                                            className={`px-2 py-0.5 rounded text-[10px] font-black ${acc?.roomStandard === roomValue.room_name && acc?.mealPlan === mp.id && acc?.pricePerNight === mp.summer ? 'bg-brand-gold text-white' : 'bg-brand-gold/10 text-brand-gold hover:bg-brand-gold/20'}`}>
-                                                                                                            ${mp.summer}
-                                                                                                        </button>
-                                                                                                    )}
-                                                                                                    {mp.winter > 0 && (
-                                                                                                        <button
-                                                                                                            onClick={() => {
-                                                                                                                const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                                                                                if (!block) return;
-                                                                                                                updateData({
-                                                                                                                    accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
-                                                                                                                        ...a,
-                                                                                                                        roomStandard: roomValue.room_name,
-                                                                                                                        mealPlan: mp.id as any,
-                                                                                                                        pricePerNight: mp.winter
-                                                                                                                    } : a)
-                                                                                                                });
-                                                                                                            }}
-                                                                                                            className={`px-2 py-0.5 rounded text-[10px] font-black ${acc?.roomStandard === roomValue.room_name && acc?.mealPlan === mp.id && acc?.pricePerNight === mp.winter ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-500 hover:bg-blue-100'}`}>
-                                                                                                            ${mp.winter}
-                                                                                                        </button>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                </div>
-                                                                            );
-                                                                        })}
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {amenities.map(a => (
+                                                                            <div key={a.key} className="flex items-center gap-1 px-2 py-0.5 bg-neutral-50 rounded-full border border-neutral-100">
+                                                                                <span className="text-neutral-400">{a.icon}</span>
+                                                                                <span className="text-[9px] font-bold text-neutral-500">{a.label}</span>
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
 
-                                                                    {/* Room Count Selection */}
-                                                                    <div className="pt-2 border-t border-neutral-200/50 flex items-center justify-between">
-                                                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Rooms Required</label>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                                                    if (!block) return;
-                                                                                    updateData({
-                                                                                        accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
-                                                                                            ...a,
-                                                                                            numberOfRooms: Math.max(1, (a.numberOfRooms || 1) - 1)
-                                                                                        } : a)
-                                                                                    });
-                                                                                }}
-                                                                                className="w-6 h-6 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-brand-gold hover:border-brand-gold transition-colors">
-                                                                                <PlusCircle className="rotate-45" size={14} />
-                                                                            </button>
-                                                                            <span className="text-xs font-black text-neutral-800 w-4 text-center">
-                                                                                {tripData.accommodations.find(a => a.nightIndex === (tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.dayNumber))?.numberOfRooms || 1}
-                                                                            </span>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                                                    if (!block) return;
-                                                                                    updateData({
-                                                                                        accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
-                                                                                            ...a,
-                                                                                            numberOfRooms: (a.numberOfRooms || 1) + 1
-                                                                                        } : a)
-                                                                                    });
-                                                                                }}
-                                                                                className="w-6 h-6 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-brand-gold hover:border-brand-gold transition-colors">
-                                                                                <PlusCircle size={14} />
-                                                                            </button>
+                                                                    {isSelected && (
+                                                                        <div className="flex items-center justify-center gap-1.5 py-1 bg-brand-gold/10 rounded-lg border border-brand-gold/20">
+                                                                            <CheckCircle2 size={12} className="text-brand-gold" />
+                                                                            <span className="text-[9px] font-black text-brand-gold uppercase">Currently Assigned</span>
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+
+                                                                {isSelected && (
+                                                                    <div className="space-y-4 px-1 pb-2">
+                                                                        <div className="grid grid-cols-1 gap-2">
+                                                                            {h.hotel_rooms?.map((room: any) => {
+                                                                                const currentStay = tripData.accommodations.find(a => a.nightIndex === activeBlock?.dayNumber);
+                                                                                const isRoomSelected = currentStay?.roomId === room.id;
+
+                                                                                let roomRate = room.summer_bb_rate || room.winter_bb_rate;
+                                                                                let seasonLabel = "Standard";
+
+                                                                                if (stayDate && room.summer_start_date && room.summer_end_date && stayDate >= room.summer_start_date && stayDate <= room.summer_end_date) {
+                                                                                    roomRate = room.summer_bb_rate;
+                                                                                    seasonLabel = "Summer";
+                                                                                } else if (stayDate && room.winter_start_date && room.winter_end_date && stayDate >= room.winter_start_date && stayDate <= room.winter_end_date) {
+                                                                                    roomRate = room.winter_bb_rate;
+                                                                                    seasonLabel = "Winter";
+                                                                                }
+
+                                                                                return (
+                                                                                    <button
+                                                                                        key={room.id}
+                                                                                        onClick={() => {
+                                                                                            updateData({
+                                                                                                accommodations: tripData.accommodations.map(a => a.nightIndex === activeBlock?.dayNumber ? {
+                                                                                                    ...a,
+                                                                                                    roomId: room.id,
+                                                                                                    roomName: room.room_name,
+                                                                                                    roomStandard: room.room_standard,
+                                                                                                    pricePerNight: roomRate
+                                                                                                } : a)
+                                                                                            });
+                                                                                        }}
+                                                                                        className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${isRoomSelected ? 'border-brand-green bg-brand-green/5 shadow-sm' : 'border-neutral-100 hover:border-neutral-200'}`}
+                                                                                    >
+                                                                                        <div className="flex-1">
+                                                                                            <p className="text-xs font-bold text-neutral-800">{room.room_name}</p>
+                                                                                            <span className="text-[9px] text-neutral-400 font-medium uppercase tracking-tighter">{room.room_standard} • {seasonLabel}</span>
+                                                                                        </div>
+                                                                                        <div className="text-right">
+                                                                                            <p className="text-xs font-black text-brand-charcoal">${roomRate}</p>
+                                                                                        </div>
+                                                                                    </button>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+
+                                                                        <div className="pt-2 border-t border-neutral-200/50 flex items-center justify-between">
+                                                                            <label className="text-[10px] font-bold text-neutral-500 uppercase">Rooms Required</label>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                                                                        if (!block) return;
+                                                                                        updateData({
+                                                                                            accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
+                                                                                                ...a,
+                                                                                                numberOfRooms: Math.max(1, (a.numberOfRooms || 1) - 1)
+                                                                                            } : a)
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-6 h-6 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400">
+                                                                                    <PlusCircle size={14} className="rotate-45" />
+                                                                                </button>
+                                                                                <span className="text-xs font-black text-neutral-800 w-4 text-center">
+                                                                                    {tripData.accommodations.find(a => a.nightIndex === activeBlock?.dayNumber)?.numberOfRooms || 1}
+                                                                                </span>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                                                                        if (!block) return;
+                                                                                        updateData({
+                                                                                            accommodations: tripData.accommodations.map(a => a.nightIndex === block.dayNumber ? {
+                                                                                                ...a,
+                                                                                                numberOfRooms: (a.numberOfRooms || 1) + 1
+                                                                                            } : a)
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-6 h-6 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400">
+                                                                                    <PlusCircle size={14} />
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
-                                                <button
-                                                    onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
-                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle2 size={18} />
-                                                    Finish Assignment
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <div className="p-6 sticky bottom-0 bg-white border-t">
+                                                    <button onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                        className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2">
+                                                        <CheckCircle2 size={18} /> Finish Assignment
+                                                    </button>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+
                                     {activeAssignment.type === 'activity' && (() => {
                                         const currentBlock = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
                                         const baseActivity = masterData.activities.find(a => a.id === currentBlock?.activityId) ||
                                             tripData.activities.find(a => a.activityId === currentBlock?.activityId)?.activityData;
-
-                                        // Find vendors who specifically offer this activity
                                         const specializedVendors = masterData.vendors.filter(v =>
                                             v.vendor_activities?.some(va => va.activity_id === currentBlock?.activityId)
                                         );
 
-                                        const otherVendors = masterData.vendors.filter(v =>
-                                            !v.vendor_activities?.some(va => va.activity_id === currentBlock?.activityId) &&
-                                            (searchTerm === "" || v.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                        );
-
                                         return (
                                             <>
-                                                {/* Activity Context Header */}
                                                 {baseActivity && (
                                                     <div className="mx-4 mt-4 p-4 bg-orange-50 border border-orange-100 rounded-2xl">
                                                         <div className="flex items-start gap-3">
@@ -1314,160 +1293,48 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                 <h5 className="text-sm font-bold text-neutral-800">{baseActivity.activity_name}</h5>
                                                                 <p className="text-[10px] text-neutral-500 font-medium mt-0.5 flex items-center gap-1">
                                                                     <MapPin size={10} /> {baseActivity.location_name}, {baseActivity.district}
-                                                                    <span className="mx-1">•</span>
-                                                                    {baseActivity.category}
-                                                                </p>
-                                                                <p className="text-[10px] text-neutral-400 mt-2 line-clamp-2 leading-relaxed">
-                                                                    {baseActivity.description}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 )}
 
-                                                <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y mt-4 flex justify-between items-center">
-                                                    <span>Registered Specialists ({specializedVendors.length})</span>
-                                                    {specializedVendors.length > 0 && <span className="text-[9px] bg-brand-green/10 text-brand-green px-1.5 py-0.5 rounded-full">Recommended</span>}
+                                                <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y mt-4">
+                                                    Specialist Vendors ({specializedVendors.length})
                                                 </div>
 
                                                 <div className="grid grid-cols-1 gap-3 p-4">
                                                     {specializedVendors.map(v => {
                                                         const isSelected = currentBlock?.vendorId === v.id;
                                                         const va = v.vendor_activities?.find(a => a.activity_id === currentBlock?.activityId);
-
                                                         return (
-                                                            <div key={v.id} className="space-y-2">
-                                                                <button onClick={() => bindProvider(activeAssignment.blockId, 'vendorId', v.id)}
-                                                                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between shadow-sm ${isSelected ? 'border-brand-green bg-brand-green/5 ring-1 ring-brand-green/20' : 'border-neutral-200 bg-white hover:border-brand-green/30'}`}>
-                                                                    <div className="flex-1 pr-4">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="font-bold text-sm text-neutral-800">{v.name}</p>
-                                                                            {v.is_suspended && <span className="text-[8px] bg-red-100 text-red-600 px-1 py-0.5 rounded uppercase font-bold">Suspended</span>}
-                                                                        </div>
-                                                                        <p className="text-[10px] text-neutral-400 font-medium mt-0.5 truncate">{v.address || 'Location on file'}</p>
-                                                                        <div className="flex items-center gap-3 mt-2">
-                                                                            <div className="flex items-center gap-1 text-[9px] text-neutral-500 font-bold uppercase tracking-tight">
-                                                                                <CheckCircle2 size={10} className="text-brand-green" /> Regular Provider
-                                                                            </div>
-                                                                            {va && (
-                                                                                <div className="text-[9px] font-black text-brand-green bg-brand-green/10 px-1.5 py-0.5 rounded">
-                                                                                    LKR {va.vendor_price?.toLocaleString()}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-right shrink-0">
-                                                                        <ChevronRight size={16} className={isSelected ? 'text-brand-green' : 'text-neutral-300'} />
-                                                                    </div>
-                                                                </button>
-
-                                                                {isSelected && va && (
-                                                                    <div className="mx-2 p-3 bg-white border border-brand-gold rounded-xl shadow-md animate-in fade-in zoom-in duration-200">
-                                                                        <div className="flex items-center justify-between mb-3">
-                                                                            <div>
-                                                                                <p className="text-[10px] text-neutral-400 font-bold uppercase">Contracted Service</p>
-                                                                                <p className="text-xs font-bold text-neutral-800">{va.activity_name || baseActivity?.activity_name}</p>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                <p className="text-[10px] text-neutral-400 font-bold uppercase">Rate</p>
-                                                                                <p className="text-sm font-black text-brand-green">LKR {va.vendor_price?.toLocaleString()}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const fullName = `${v.name} - ${va.activity_name || baseActivity?.activity_name}`;
-                                                                                updateBlock(activeAssignment.blockId, {
-                                                                                    vendorId: v.id,
-                                                                                    vendorActivityId: va.id,
-                                                                                    activityId: va.activity_id,
-                                                                                    agreedPrice: va.vendor_price,
-                                                                                    name: fullName
-                                                                                });
-                                                                                setActiveAssignment(null);
-                                                                                setSearchTerm("");
-                                                                            }}
-                                                                            className="w-full py-2 bg-brand-gold text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-brand-gold/90 transition-all shadow-sm"
-                                                                        >
-                                                                            Confirm Selection
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                            <button key={v.id} onClick={() => bindProvider(activeAssignment.blockId, 'vendorId', v.id)}
+                                                                className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected ? 'border-brand-green bg-brand-green/5' : 'border-neutral-200 bg-white hover:border-brand-green/30'}`}>
+                                                                <div className="flex-1">
+                                                                    <p className="font-bold text-sm text-neutral-800">{v.name}</p>
+                                                                    {va && <p className="text-xs font-black text-brand-green mt-1">LKR {va.vendor_price?.toLocaleString()}</p>}
+                                                                </div>
+                                                                <ChevronRight size={16} className={isSelected ? 'text-brand-green' : 'text-neutral-300'} />
+                                                            </button>
                                                         );
                                                     })}
                                                 </div>
-
-                                                {otherVendors.length > 0 && (
-                                                    <>
-                                                        <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y mt-2">
-                                                            Other Potential Vendors ({otherVendors.length})
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-3 p-4">
-                                                            {otherVendors.map(v => {
-                                                                const isSelected = currentBlock?.vendorId === v.id;
-                                                                return (
-                                                                    <div key={v.id} className="space-y-2">
-                                                                        <button onClick={() => bindProvider(activeAssignment.blockId, 'vendorId', v.id)}
-                                                                            className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected ? 'border-neutral-800 bg-neutral-50' : 'border-neutral-200 bg-white hover:border-neutral-300'}`}>
-                                                                            <div>
-                                                                                <p className="font-bold text-sm text-neutral-800">{v.name}</p>
-                                                                                <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{v.vendor_activities?.length || 0} Total Services</p>
-                                                                            </div>
-                                                                            <ChevronRight size={16} className="text-neutral-300" />
-                                                                        </button>
-
-                                                                        {isSelected && v.vendor_activities && v.vendor_activities.length > 0 && (
-                                                                            <div className="bg-neutral-50 rounded-2xl p-3 grid grid-cols-1 gap-2 border border-neutral-100 mx-2 shadow-inner">
-                                                                                <p className="text-[10px] font-bold text-neutral-400 uppercase mb-1 px-1">Select Activity for this Vendor</p>
-                                                                                {v.vendor_activities.map((va: any) => (
-                                                                                    <button
-                                                                                        key={va.id}
-                                                                                        onClick={() => {
-                                                                                            const fullName = `${v.name} - ${va.activity_name || va.name}`;
-                                                                                            updateBlock(activeAssignment.blockId, {
-                                                                                                vendorId: v.id,
-                                                                                                vendorActivityId: va.id,
-                                                                                                activityId: va.activity_id,
-                                                                                                agreedPrice: va.vendor_price,
-                                                                                                name: fullName
-                                                                                            });
-                                                                                            setActiveAssignment(null);
-                                                                                            setSearchTerm("");
-                                                                                        }}
-                                                                                        className="w-full p-3 rounded-xl border border-white bg-white/70 text-left transition-all hover:border-brand-gold hover:bg-white shadow-sm flex justify-between items-center"
-                                                                                    >
-                                                                                        <div>
-                                                                                            <p className="text-xs font-bold text-neutral-800">{va.activity_name || va.name}</p>
-                                                                                            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-tighter">Vendor Service</span>
-                                                                                        </div>
-                                                                                        <p className="text-xs font-black text-brand-green">LKR {va.vendor_price?.toLocaleString()}</p>
-                                                                                    </button>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
-                                                    <button
-                                                        onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
-                                                        className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <CheckCircle2 size={18} />
-                                                        Finish Assignment
+                                                <div className="p-6 sticky bottom-0 bg-white border-t">
+                                                    <button onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                        className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2">
+                                                        <CheckCircle2 size={18} /> Finish Assignment
                                                     </button>
                                                 </div>
                                             </>
                                         );
                                     })()}
+
                                     {activeAssignment.type === 'travel' && (
                                         <>
-                                            <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-b">Transport Providers</div>
-                                            <div className="grid grid-cols-1 gap-3 mt-4">
+                                            <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-b">
+                                                Transport Providers
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3 p-4">
                                                 {((filteredMasterData as any).providers || []).map((tp: any) => {
                                                     const isSelected = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.transportId === tp.id;
                                                     return (
@@ -1476,14 +1343,13 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                 className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected ? 'border-blue-500 bg-blue-50/50' : 'border-neutral-200 bg-white hover:border-blue-300'}`}>
                                                                 <div>
                                                                     <p className="font-bold text-sm text-neutral-800">{tp.name}</p>
-                                                                    <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{tp.transport_vehicles?.length || 0} Fleet Assets Available</p>
+                                                                    <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-tight">{tp.transport_vehicles?.length || 0} Assets Available</p>
                                                                 </div>
                                                                 {isSelected && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
                                                             </button>
 
-                                                            {/* Fleet Selection if provider is selected for this block */}
                                                             {isSelected && tp.transport_vehicles && tp.transport_vehicles.length > 0 && (
-                                                                <div className="bg-neutral-50 rounded-2xl p-3 space-y-3 border border-neutral-100 mx-2 shadow-inner">
+                                                                <div className="bg-neutral-50 rounded-2xl p-3 space-y-3 border border-neutral-100 mx-1 shadow-inner">
                                                                     <div className="grid grid-cols-1 gap-2">
                                                                         {tp.transport_vehicles.map((v: any) => {
                                                                             const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
@@ -1495,97 +1361,35 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                                                         const updates: Partial<InternalItineraryBlock> = {
                                                                                             vehicleId: v.id,
                                                                                             transportId: tp.id,
-                                                                                            transportRateType: 'day', // Default to day
-                                                                                            transportQuantity: 1      // Default to 1
+                                                                                            transportRateType: 'day',
+                                                                                            transportQuantity: 1
                                                                                         };
                                                                                         if (v.with_driver) {
                                                                                             updates.driverId = undefined;
                                                                                         }
                                                                                         updateBlock(activeAssignment.blockId, updates);
                                                                                     }}
-                                                                                    className={`w-full p-4 rounded-xl border text-left transition-all flex flex-col gap-3 shadow-sm ${isVehicleSelected
+                                                                                    className={`w-full p-3 rounded-xl border text-left transition-all flex flex-col gap-2 shadow-sm ${isVehicleSelected
                                                                                         ? 'bg-white border-brand-gold'
-                                                                                        : 'bg-white/70 border-neutral-100 hover:border-brand-gold/30'
+                                                                                        : 'bg-white/70 border-neutral-50 hover:border-brand-gold/30'
                                                                                         }`}
                                                                                 >
                                                                                     <div className="flex justify-between items-start w-full">
                                                                                         <div className="flex-1">
                                                                                             <p className="text-xs font-bold text-neutral-800">{v.make_and_model || v.vehicle_type}</p>
-                                                                                            <div className="flex items-center gap-2 mt-1.5">
+                                                                                            <div className="flex items-center gap-2 mt-1">
                                                                                                 <span className="text-[9px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-bold uppercase tracking-wider">{v.vehicle_number}</span>
                                                                                                 {v.with_driver && <span className="text-[9px] bg-green-100 px-1.5 py-0.5 rounded text-green-600 font-bold uppercase">Incl. Driver</span>}
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className="text-right shrink-0">
-                                                                                            <p className="text-xs font-black text-brand-green">LKR {v.day_rate?.toLocaleString() || 0}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
-                                                                                            {v.km_rate > 0 && (
-                                                                                                <p className="text-[9px] text-neutral-400 font-bold mt-1">
-                                                                                                    LKR {v.km_rate}/km
-                                                                                                    {v.max_km_per_day > 0 && <span className="block italic font-normal text-[8px]">Max {v.max_km_per_day}km</span>}
-                                                                                                </p>
-                                                                                            )}
+                                                                                            <p className="text-xs font-black text-brand-green">LKR {v.day_rate?.toLocaleString()}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
                                                                                         </div>
                                                                                     </div>
                                                                                 </button>
                                                                             );
                                                                         })}
                                                                     </div>
-
-                                                                    {/* Quantity & Rate Type Configuration - Show if a vehicle is selected */}
-                                                                    {(() => {
-                                                                        const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                                        const selectedVehicle = tp.transport_vehicles.find((v: any) => v.id === block?.vehicleId);
-                                                                        if (!selectedVehicle) return null;
-
-                                                                        return (
-                                                                            <div className="pt-3 border-t border-neutral-200 mt-2 space-y-3">
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Rate Priority</label>
-                                                                                    <div className="flex bg-neutral-200/50 p-1 rounded-lg gap-1">
-                                                                                        <button
-                                                                                            onClick={() => updateBlock(activeAssignment.blockId, { transportRateType: 'day' })}
-                                                                                            className={`px-3 py-1 rounded-md text-[9px] font-black uppercase transition-all ${block?.transportRateType === 'day' ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'}`}>
-                                                                                            Day Rate
-                                                                                        </button>
-                                                                                        <button
-                                                                                            onClick={() => updateBlock(activeAssignment.blockId, { transportRateType: 'km' })}
-                                                                                            className={`px-3 py-1 rounded-md text-[9px] font-black uppercase transition-all ${block?.transportRateType === 'km' ? 'bg-white text-neutral-800 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'}`}>
-                                                                                            KM Rate
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
-                                                                                        {block?.transportRateType === 'km' ? 'Estimated Kilometers' : 'Number of Days'}
-                                                                                    </label>
-                                                                                    <div className="flex items-center gap-3">
-                                                                                        <button
-                                                                                            onClick={() => updateBlock(activeAssignment.blockId, { transportQuantity: Math.max(1, (block?.transportQuantity || 1) - (block?.transportRateType === 'km' ? 50 : 1)) })}
-                                                                                            className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-brand-gold hover:border-brand-gold transition-colors">
-                                                                                            <RefreshCcw size={12} className="rotate-45" />
-                                                                                        </button>
-                                                                                        <div className="flex flex-col items-center min-w-[50px]">
-                                                                                            <span className="text-sm font-black text-neutral-800 leading-none">{block?.transportQuantity || 1}</span>
-                                                                                            <span className="text-[8px] text-neutral-400 font-bold uppercase">{block?.transportRateType === 'km' ? 'KM' : 'Days'}</span>
-                                                                                        </div>
-                                                                                        <button
-                                                                                            onClick={() => updateBlock(activeAssignment.blockId, { transportQuantity: (block?.transportQuantity || 1) + (block?.transportRateType === 'km' ? 50 : 1) })}
-                                                                                            className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-brand-gold hover:border-brand-gold transition-colors">
-                                                                                            <RefreshCcw size={12} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="bg-brand-green/10 p-2.5 rounded-xl flex justify-between items-center">
-                                                                                    <span className="text-[9px] font-bold text-brand-green uppercase">Calculated Block Cost</span>
-                                                                                    <span className="text-xs font-black text-brand-green">
-                                                                                        LKR {((block?.transportRateType === 'km' ? selectedVehicle.km_rate : selectedVehicle.day_rate) * (block?.transportQuantity || 1)).toLocaleString()}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })()}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1593,93 +1397,62 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                 })}
                                             </div>
 
-                                            <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y mt-6">Segment Driver Override</div>
-                                            {masterData.transportProviders
-                                                .flatMap(p => p.transport_vehicles || [])
-                                                .find(v => v.id === tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.vehicleId)?.with_driver ? (
-                                                <div className="p-8 text-center bg-green-50/30 rounded-2xl border border-green-100 m-4">
-                                                    <div className="inline-block p-3 bg-white rounded-xl shadow-sm mb-3"><UserCheck size={24} className="text-green-500" /></div>
-                                                    <p className="text-xs font-black text-green-700 uppercase tracking-tight">Standard Driver Protocol</p>
-                                                    <p className="text-[10px] text-green-600/70 mt-1 max-w-[200px] mx-auto">This vehicle includes a professional chauffeur in the day rate.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-1 gap-3 p-4">
-                                                    {((filteredMasterData as any).drivers || []).map((d: any) => {
-                                                        const isSelected = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.driverId === d.id;
-                                                        return (
-                                                            <button key={d.id} onClick={() => updateBlock(activeAssignment.blockId, { driverId: d.id })}
-                                                                className={`p-4 rounded-xl border text-left transition-all flex flex-col gap-2 ${isSelected ? 'border-brand-gold bg-brand-gold/5' : 'border-neutral-200 bg-white hover:border-brand-gold/50'}`}>
-                                                                <div className="flex justify-between items-start w-full">
-                                                                    <div>
-                                                                        <p className="font-bold text-sm text-neutral-800">{d.first_name} {d.last_name}</p>
-                                                                        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-tight">Professional Chauffeur</p>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <p className="text-sm font-black text-brand-green">LKR {d.per_day_rate?.toLocaleString() || 0}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-
-                                            <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
-                                                <button
-                                                    onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
-                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle2 size={18} />
-                                                    Finish Assignment
+                                            <div className="p-3 bg-neutral-50 text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-y mt-2">
+                                                Chauffeur Database
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3 p-4">
+                                                {((filteredMasterData as any).drivers || []).map((d: any) => {
+                                                    const isSelected = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.driverId === d.id;
+                                                    return (
+                                                        <button key={d.id} onClick={() => updateBlock(activeAssignment.blockId, { driverId: d.id })}
+                                                            className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected ? 'border-brand-gold bg-brand-gold/5' : 'border-neutral-200 bg-white hover:border-brand-gold/50'}`}>
+                                                            <div>
+                                                                <p className="font-bold text-sm text-neutral-800">{d.first_name} {d.last_name}</p>
+                                                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-tight">Professional Driver</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs font-black text-brand-green">LKR {d.per_day_rate?.toLocaleString()}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="p-6 sticky bottom-0 bg-white border-t">
+                                                <button onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2">
+                                                    <CheckCircle2 size={18} /> Finish Assignment
                                                 </button>
                                             </div>
                                         </>
                                     )}
+
                                     {activeAssignment.type === 'meal' && (
                                         <>
-                                            <div className="grid grid-cols-1 gap-4 mt-4">
+                                            <div className="grid grid-cols-1 gap-4 p-4">
                                                 {(filteredMasterData as any[]).map(r => {
-                                                    const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                                    const isSelected = block?.restaurantId === r.id;
-
+                                                    const currentBlock = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                                    const isSelected = currentBlock?.restaurantId === r.id;
                                                     return (
                                                         <div key={r.id} className="space-y-3">
-                                                            <button
-                                                                onClick={() => bindProvider(activeAssignment.blockId!, 'restaurantId', r.id)}
-                                                                className={`w-full p-4 rounded-xl border text-left transition-all flex flex-col gap-2 ${isSelected ? 'border-brand-green bg-brand-green/5' : 'border-neutral-200 bg-white hover:border-brand-green/50'}`}
-                                                            >
-                                                                <div className="flex justify-between items-start w-full">
-                                                                    <div>
-                                                                        <p className="font-bold text-sm text-neutral-800">{r.name}</p>
-                                                                        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-tight">{r.is_buffet ? 'Buffet Service' : 'A La Carte'} Specialist</p>
-                                                                    </div>
-                                                                    {isSelected && <div className="w-2 h-2 bg-brand-green rounded-full shadow-[0_0_8px_rgba(0,128,0,0.3)]" />}
+                                                            <button onClick={() => bindProvider(activeAssignment.blockId, 'restaurantId', r.id)}
+                                                                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected ? 'border-brand-green bg-brand-green/5' : 'border-neutral-200 bg-white hover:border-brand-green/30'}`}>
+                                                                <div>
+                                                                    <p className="font-bold text-sm text-neutral-800">{r.name}</p>
+                                                                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-tight">{r.cuisine_type} • {r.is_buffet ? 'Buffet' : 'A La Carte'}</p>
                                                                 </div>
+                                                                {isSelected && <div className="w-2 h-2 bg-brand-green rounded-full" />}
                                                             </button>
-
                                                             {isSelected && (
-                                                                <div className="bg-neutral-50 rounded-2xl p-3 grid grid-cols-1 gap-2 border border-neutral-100 mx-2">
+                                                                <div className="bg-neutral-50 rounded-2xl p-2 grid grid-cols-1 gap-2 border border-neutral-100 mx-1">
                                                                     {[
                                                                         { id: 'breakfast', label: 'Breakfast', active: r.has_breakfast, price: r.breakfast_rate_per_head },
                                                                         { id: 'lunch', label: 'Lunch', active: r.has_lunch, price: r.lunch_rate_per_head },
-                                                                        { id: 'dinner', label: 'Dinner', active: r.has_dinner, price: r.dinner_rate_per_head },
-                                                                        { id: 'tea', label: 'Tea/Cafe', active: r.has_tea_cafe, price: r.tea_cafe_rate_per_head },
-                                                                        { id: 'coffee', label: 'Coffee', active: r.has_coffee_cafe, price: r.coffee_cafe_rate_per_head },
-                                                                        { id: 'juice', label: 'Juice Bar', active: r.has_juice_bar, price: r.juice_bar_rate_per_head },
+                                                                        { id: 'dinner', label: 'Dinner', active: r.has_dinner, price: r.dinner_rate_per_head }
                                                                     ].filter(m => m.active).map(meal => (
-                                                                        <button
-                                                                            key={meal.id}
-                                                                            onClick={() => updateBlock(activeAssignment.blockId!, {
-                                                                                mealType: meal.label,
-                                                                                agreedPrice: meal.price || 0
-                                                                            })}
-                                                                            className={`w-full p-3 rounded-xl flex items-center justify-between transition-all border shadow-sm ${block?.mealType === meal.label ? 'bg-white border-brand-gold' : 'bg-white/70 border-neutral-100 hover:border-brand-gold/30'}`}
-                                                                        >
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className={`w-1.5 h-1.5 rounded-full ${block?.mealType === meal.label ? 'bg-brand-gold' : 'bg-neutral-300'}`} />
-                                                                                <span className="text-xs font-bold text-neutral-700">{meal.label}</span>
-                                                                            </div>
-                                                                            <span className="text-xs font-mono font-bold text-brand-green">LKR {(meal.price || 0).toLocaleString()}</span>
+                                                                        <button key={meal.id} onClick={() => updateBlock(activeAssignment.blockId, { mealType: meal.label, agreedPrice: meal.price || 0 })}
+                                                                            className={`p-3 rounded-lg flex items-center justify-between text-xs font-bold ${currentBlock?.mealType === meal.label ? 'bg-white border-brand-gold border' : 'bg-white/50 border-transparent hover:border-neutral-200 border'}`}>
+                                                                            <span>{meal.label}</span>
+                                                                            <span className="text-brand-green">LKR {(meal.price || 0).toLocaleString()}</span>
                                                                         </button>
                                                                     ))}
                                                                 </div>
@@ -1688,36 +1461,32 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                     );
                                                 })}
                                             </div>
-                                            <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
-                                                <button
-                                                    onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
-                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle2 size={18} />
-                                                    Finish Assignment
+                                            <div className="p-6 sticky bottom-0 bg-white border-t">
+                                                <button onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2">
+                                                    <CheckCircle2 size={18} /> Finish Assignment
                                                 </button>
                                             </div>
                                         </>
                                     )}
+
                                     {activeAssignment.type === 'guide' && (
                                         <>
-                                            <div className="grid grid-cols-1 gap-3 mt-4">
+                                            <div className="grid grid-cols-1 gap-4 p-4">
                                                 {(filteredMasterData as any[]).map(g => {
                                                     const isSelected = tripData.itinerary.find(b => b.id === activeAssignment.blockId)?.guideId === g.id;
                                                     return (
                                                         <button key={g.id} onClick={() => bindProvider(activeAssignment.blockId, 'guideId', g.id)}
                                                             className={`p-4 rounded-xl border text-left transition-all flex flex-col gap-2 ${isSelected ? 'border-brand-gold bg-brand-gold/5' : 'border-neutral-200 bg-white hover:border-brand-gold/50'}`}>
-
                                                             <div className="flex justify-between items-start w-full">
                                                                 <div>
                                                                     <p className="font-bold text-sm text-neutral-800">{g.first_name} {g.last_name}</p>
-                                                                    <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{g.license_id ? `Lic: ${g.license_id}` : 'No License on File'}</p>
+                                                                    <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{g.license_id ? `Lic: ${g.license_id}` : 'Professional Guide'}</p>
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <p className="text-sm font-black text-brand-green">${g.per_day_rate || 0}<span className="text-[10px] text-neutral-400 font-normal">/day</span></p>
                                                                 </div>
                                                             </div>
-
                                                             {g.languages && g.languages.length > 0 && (
                                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                                     {g.languages.map((l: string) => (
@@ -1729,58 +1498,66 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                                                     );
                                                 })}
                                             </div>
-                                            <div className="p-6 sticky bottom-0 bg-white border-t mt-4">
-                                                <button
-                                                    onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
-                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle2 size={18} />
-                                                    Finish Assignment
+                                            <div className="p-6 sticky bottom-0 bg-white border-t">
+                                                <button onClick={() => { setActiveAssignment(null); setSearchTerm(""); }}
+                                                    className="w-full py-3 bg-brand-green text-white font-bold rounded-xl shadow-lg hover:bg-brand-green/90 transition-all flex items-center justify-center gap-2">
+                                                    <CheckCircle2 size={18} /> Finish Assignment
                                                 </button>
                                             </div>
                                         </>
                                     )}
-                                    {filteredMasterData && (Array.isArray(filteredMasterData) ? filteredMasterData.length === 0 : (filteredMasterData.providers.length === 0 && filteredMasterData.drivers.length === 0)) && (
-                                        <div className="p-12 text-center text-neutral-400 italic text-sm">
-                                            No providers found matching &quot;{searchTerm}&quot;
-                                        </div>
-                                    )}
+
+                                    {(() => {
+                                        const noResults = activeAssignment.type === 'travel'
+                                            ? ((filteredMasterData as any).providers?.length === 0 && (filteredMasterData as any).drivers?.length === 0)
+                                            : (filteredMasterData as any[]).length === 0;
+
+                                        if (noResults) {
+                                            return (
+                                                <div className="p-12 text-center text-neutral-400 italic text-sm">
+                                                    No providers found matching &quot;{searchTerm}&quot;
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
 
-                                <button
-                                    onClick={() => {
-                                        const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
-                                        const fields: (keyof InternalItineraryBlock)[] = ['hotelId', 'vendorId', 'transportId', 'driverId', 'restaurantId', 'guideId', 'vehicleId'];
-                                        const blockUpdates: Partial<InternalItineraryBlock> = {};
-                                        fields.forEach(f => (blockUpdates as any)[f] = undefined);
+                                <div className="p-6 mt-auto">
+                                    <button
+                                        onClick={() => {
+                                            const block = tripData.itinerary.find(b => b.id === activeAssignment.blockId);
+                                            const fields: (keyof InternalItineraryBlock)[] = ['hotelId', 'vendorId', 'transportId', 'driverId', 'restaurantId', 'guideId', 'vehicleId'];
+                                            const blockUpdates: Partial<InternalItineraryBlock> = {};
+                                            fields.forEach(f => (blockUpdates as any)[f] = undefined);
 
-                                        const updates: Partial<TripData> = {
-                                            itinerary: tripData.itinerary.map(b => b.id === activeAssignment.blockId ? { ...b, ...blockUpdates } : b)
-                                        };
+                                            const updates: Partial<TripData> = {
+                                                itinerary: tripData.itinerary.map(b => b.id === activeAssignment.blockId ? { ...b, ...blockUpdates } : b)
+                                            };
 
-                                        // Clear hotel sync if needed
-                                        if (block?.type === 'sleep') {
-                                            updates.accommodations = tripData.accommodations.map(acc => {
-                                                if (acc.nightIndex === block.dayNumber) {
-                                                    return {
-                                                        ...acc,
-                                                        hotelId: undefined,
-                                                        hotelName: 'Not Assigned',
-                                                        address: ''
-                                                    };
-                                                }
-                                                return acc;
-                                            });
-                                        }
+                                            if (block?.type === 'sleep') {
+                                                updates.accommodations = tripData.accommodations.map(acc => {
+                                                    if (acc.nightIndex === block.dayNumber) {
+                                                        return {
+                                                            ...acc,
+                                                            hotelId: undefined,
+                                                            hotelName: 'Not Assigned',
+                                                            address: ''
+                                                        };
+                                                    }
+                                                    return acc;
+                                                });
+                                            }
 
-                                        updateData(updates);
-                                        setActiveAssignment(null);
-                                        setSearchTerm("");
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2 py-3 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all border border-red-100"
-                                >
-                                    <Link2Off size={14} /> Clear Assignment
-                                </button>
+                                            updateData(updates);
+                                            setActiveAssignment(null);
+                                            setSearchTerm("");
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 py-3 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all border border-red-100"
+                                    >
+                                        <Link2Off size={14} /> Clear Assignment
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

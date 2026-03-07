@@ -58,6 +58,10 @@ export interface Hotel {
     admin_approved?: boolean;
     vat_registered?: boolean;
     is_suspended?: boolean;
+    child_free_until_age?: number;
+    child_half_price_until_age?: number;
+    child_half_price_percentage?: number;
+    child_policy_notes?: string;
     payment_detail_id?: string;
     payment_details?: PaymentDetails;
     rooms?: HotelRoom[];
