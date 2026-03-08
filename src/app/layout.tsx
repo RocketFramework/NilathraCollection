@@ -74,6 +74,7 @@ export default function RootLayout({
         className={`${outfit.variable} ${playfair.variable} antialiased min-h-screen bg-[#F5F3EF] text-[#2B2B2B] font-sans`}
       >
         {children}
+        <Analytics/>
       </body>
     </html>
   );

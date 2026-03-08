@@ -14,6 +14,10 @@ export interface CreateRequestDTO {
     budget_tier?: string;
     special_requirements?: string;
     note?: string;
+    departure_country?: string;
+    budget?: number;
+    duration_nights?: number;
+    infants?: number;
 }
 
 export interface UpdateRequestDTO {

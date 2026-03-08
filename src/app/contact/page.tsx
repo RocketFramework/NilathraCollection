@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Phone, Mail, MapPin, MessageCircle, Send, Globe, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -17,9 +17,31 @@ export default function ContactPage() {
         name: "",
         email: "",
         phone: "",
+        departureCountry: "",
         inquiryType: "Super Luxury VIP Experience",
+        startDate: "",
+        durationNights: 7,
+        adults: 2,
+        children: 0,
+        infants: 0,
+        budget: 5000,
         message: ""
     });
+
+    useEffect(() => {
+        const fetchLocation = async () => {
+            try {
+                const response = await fetch("https://ipapi.co/json/");
+                const data = await response.json();
+                if (data.country_name) {
+                    setForm(prev => ({ ...prev, departureCountry: data.country_name }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch location data for auto-population", error);
+            }
+        };
+        fetchLocation();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +52,14 @@ export default function ContactPage() {
             const result = await submitInquiryAction(form);
             if (result.success) {
                 setIsSuccess(true);
-                setForm({ name: "", email: "", phone: "", inquiryType: "Super Luxury VIP Experience", message: "" });
+                setForm({
+                    name: "", email: "", phone: "",
+                    departureCountry: form.departureCountry,
+                    inquiryType: "Super Luxury VIP Experience",
+                    startDate: "", durationNights: 7,
+                    adults: 2, children: 0, infants: 0,
+                    budget: 5000, message: ""
+                });
             } else {
                 setError(result.error || "Failed to deliver inquiry.");
             }
@@ -143,32 +172,124 @@ export default function ContactPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Phone Number (Optional)</label>
-                                            <PhoneInput
-                                                required={false}
-                                                value={form.phone}
-                                                onPhoneChange={(val) => setForm({ ...form, phone: val })}
-                                                className="w-full bg-white/50 border-b border-brand-charcoal/20 outline-none focus-within:border-brand-gold transition-colors"
-                                            />
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Phone Number (Optional)</label>
+                                                <PhoneInput
+                                                    required={false}
+                                                    value={form.phone}
+                                                    onPhoneChange={(val) => setForm({ ...form, phone: val })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 outline-none focus-within:border-brand-gold transition-colors"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Departure Country</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={form.departureCountry}
+                                                    onChange={e => setForm({ ...form, departureCountry: e.target.value })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Inquiry Type</label>
-                                            <select
-                                                value={form.inquiryType}
-                                                onChange={e => setForm({ ...form, inquiryType: e.target.value })}
-                                                className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors appearance-none"
-                                            >
-                                                <option>Super Luxury VIP Experience</option>
-                                                <option>Deluxe Collection Package</option>
-                                                <option>Standard Premium Plan</option>
-                                                <option>Custom Mix Itinerary</option>
-                                            </select>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Expected Start Date</label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    value={form.startDate}
+                                                    onChange={e => setForm({ ...form, startDate: e.target.value })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Duration (Nights)</label>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    required
+                                                    value={form.durationNights}
+                                                    onChange={e => setForm({ ...form, durationNights: parseInt(e.target.value) || 0 })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors"
+                                                />
+                                            </div>
                                         </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Party Composition</label>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div className="relative">
+                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] text-brand-charcoal/30 uppercase font-bold pl-1">A</span>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        value={form.adults}
+                                                        onChange={e => setForm({ ...form, adults: parseInt(e.target.value) || 0 })}
+                                                        className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 pl-6 outline-none focus:border-brand-gold transition-colors"
+                                                        placeholder="Adults"
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] text-brand-charcoal/30 uppercase font-bold pl-1">C</span>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        value={form.children}
+                                                        onChange={e => setForm({ ...form, children: parseInt(e.target.value) || 0 })}
+                                                        className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 pl-6 outline-none focus:border-brand-gold transition-colors"
+                                                        placeholder="Children"
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] text-brand-charcoal/30 uppercase font-bold pl-1">I</span>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        value={form.infants}
+                                                        onChange={e => setForm({ ...form, infants: parseInt(e.target.value) || 0 })}
+                                                        className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 pl-6 outline-none focus:border-brand-gold transition-colors"
+                                                        placeholder="Infants"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Estimated Budget (USD)</label>
+                                                <input
+                                                    type="number"
+                                                    min={500}
+                                                    step={500}
+                                                    required
+                                                    value={form.budget}
+                                                    onChange={e => setForm({ ...form, budget: parseInt(e.target.value) || 0 })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Inquiry Type</label>
+                                                <select
+                                                    value={form.inquiryType}
+                                                    onChange={e => setForm({ ...form, inquiryType: e.target.value })}
+                                                    className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors appearance-none"
+                                                >
+                                                    <option>Super Luxury VIP Experience</option>
+                                                    <option>Deluxe Collection Package</option>
+                                                    <option>Standard Premium Plan</option>
+                                                    <option>Custom Mix Itinerary</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Message</label>
                                             <textarea
-                                                rows={6}
+                                                rows={4}
                                                 required
                                                 value={form.message}
                                                 onChange={e => setForm({ ...form, message: e.target.value })}

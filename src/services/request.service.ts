@@ -18,6 +18,13 @@ export class RequestService {
             phone_number: dto.phone_number ? Number(dto.phone_number) : null,
             note: dto.note,
             request_type: dto.request_type,
+            departure_country: dto.departure_country,
+            budget: dto.budget || dto.estimated_price,
+            start_date: dto.start_date,
+            duration_nights: dto.duration_nights || dto.nights,
+            adults: dto.adults,
+            children: dto.children,
+            infants: dto.infants,
         };
 
         const { error: reqError } = await supabase

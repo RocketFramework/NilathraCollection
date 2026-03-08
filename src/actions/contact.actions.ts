@@ -10,9 +10,20 @@ export async function submitInquiryAction(formData: {
     phone?: string;
     inquiryType: string;
     message: string;
+    departureCountry?: string;
+    budget?: number;
+    startDate?: string;
+    durationNights?: number;
+    adults?: number;
+    children?: number;
+    infants?: number;
 }) {
     try {
-        const { name, email, phone, inquiryType, message } = formData;
+        const {
+            name, email, phone, inquiryType, message,
+            departureCountry, budget, startDate, durationNights,
+            adults, children, infants
+        } = formData;
 
         if (!email || !message || !name) {
             return { error: "Name, email, and message are required." };
@@ -33,11 +44,15 @@ export async function submitInquiryAction(formData: {
             phone_number: phone,
             request_type: 'inquiry',
             note: `Inquiry Type: ${inquiryType}\n\nMessage: ${message}`,
+            departure_country: departureCountry,
+            budget,
+            start_date: startDate,
+            duration_nights: durationNights,
+            adults,
+            children,
+            infants,
         };
 
-        // Note: RequestService.createRequest might need adjustment for 'inquiry' if it expects details table.
-        // Currently, it only inserts into 'request_details' if type is 'custom-plan' or 'package'.
-        // This 'inquiry' will just go into the main 'requests' table.
         await RequestService.createRequest(requestDto, userId);
 
         return { success: true, message: "Your inquiry has been delivered successfully. Our concierge will contact you shortly." };
