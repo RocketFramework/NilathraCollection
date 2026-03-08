@@ -105,6 +105,8 @@ export class RequestService {
         const from = (page - 1) * pageSize;
         const to = from + pageSize - 1;
 
+        const detailsJoin = filters.nightsValue !== undefined ? '!inner' : '';
+
         let query = supabase
             .from('requests')
             .select(`
@@ -118,7 +120,7 @@ export class RequestService {
                     email,
                     tourist_profile:tourist_profiles(first_name, last_name)
                 ),
-                details:request_details!inner(package_name, destinations, start_date, nights)
+                details:request_details${detailsJoin}(package_name, destinations, start_date, nights)
             `, { count: 'exact' })
             .order('created_at', { ascending: false });
 
