@@ -6,6 +6,7 @@ import { Phone, Mail, MapPin, MessageCircle, Send, Globe, CheckCircle2 } from "l
 import Link from "next/link";
 import Image from "next/image";
 import { submitInquiryAction } from "@/actions/contact.actions";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 export default function ContactPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,11 +145,11 @@ export default function ContactPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest font-bold text-brand-charcoal/40">Phone Number (Optional)</label>
-                                            <input
-                                                type="tel"
+                                            <PhoneInput
+                                                required={false}
                                                 value={form.phone}
-                                                onChange={e => setForm({ ...form, phone: e.target.value })}
-                                                className="w-full bg-white/50 border-b border-brand-charcoal/20 p-3 outline-none focus:border-brand-gold transition-colors"
+                                                onPhoneChange={(val) => setForm({ ...form, phone: val })}
+                                                className="w-full bg-white/50 border-b border-brand-charcoal/20 outline-none focus-within:border-brand-gold transition-colors"
                                             />
                                         </div>
                                         <div className="space-y-2">
