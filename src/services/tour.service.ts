@@ -158,6 +158,9 @@ export class TourService {
                 *,
                 request:requests(
                     email, 
+                    name,
+                    phone_number,
+                    note,
                     details:request_details(*)
                 ),
                 tourist:users!tours_tourist_id_fkey(
@@ -185,9 +188,9 @@ export class TourService {
 
         const seedData: Partial<TripData> = {
             id: tourId,
-            clientName: touristProfile.first_name ? `${touristProfile.first_name} ${touristProfile.last_name}` : (reqInfo?.email || 'New Client Inquiry'),
+            clientName: reqInfo?.name || (touristProfile.first_name ? `${touristProfile.first_name} ${touristProfile.last_name}` : (reqInfo?.email || 'New Client Inquiry')),
             clientEmail: reqInfo?.email || tourist?.email || '',
-            clientPhone: touristProfile.phone || '',
+            clientPhone: reqInfo?.phone_number?.toString() || touristProfile.phone || '',
             status: tourMsg.status as any,
             profile: {
                 adults: details.adults || 2,
@@ -204,7 +207,7 @@ export class TourService {
                     medical: '',
                     accessibility: '',
                     language: 'English',
-                    occasion: ''
+                    occasion: reqInfo?.note || details?.special_requirements || ''
                 }
             },
             serviceScopes: [],
