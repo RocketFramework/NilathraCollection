@@ -14,9 +14,10 @@ const plans = [
         icon: Crown,
         href: "/plans/ultra-vip",
         badge: "The Pinnacle",
-        color: "bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-800",
+        image: "/images/plans/ultra-vip.png",
+        color: "from-neutral-950/60 via-transparent to-transparent",
         iconColor: "text-amber-400",
-        textColor: "text-neutral-300",
+        textColor: "text-neutral-100",
         btnColor: "bg-amber-500 text-black hover:bg-amber-400"
     },
     {
@@ -27,7 +28,8 @@ const plans = [
         icon: Gem,
         href: "/plans/luxury",
         badge: "Exquisite Comfort",
-        color: "bg-gradient-to-br from-amber-900 to-amber-700",
+        image: "/images/plans/luxury.png",
+        color: "from-amber-950/60 via-transparent to-transparent",
         iconColor: "text-amber-200",
         textColor: "text-amber-50",
         btnColor: "bg-white text-amber-900 hover:bg-amber-50"
@@ -40,7 +42,8 @@ const plans = [
         icon: Sparkles,
         href: "/plans/premium",
         badge: "Refined Style",
-        color: "bg-gradient-to-br from-logo-blue to-blue-900",
+        image: "/images/plans/premium.png",
+        color: "from-blue-950/60 via-transparent to-transparent",
         iconColor: "text-blue-200",
         textColor: "text-blue-50",
         btnColor: "bg-white text-logo-blue hover:bg-neutral-50"
@@ -53,7 +56,8 @@ const plans = [
         icon: Check,
         href: "/plans/regular",
         badge: "Authentic Value",
-        color: "bg-gradient-to-br from-green-800 to-green-600",
+        image: "/images/plans/regular.png",
+        color: "from-green-950/60 via-transparent to-transparent",
         iconColor: "text-green-200",
         textColor: "text-green-50",
         btnColor: "bg-white text-green-900 hover:bg-green-50"
@@ -66,7 +70,8 @@ const plans = [
         icon: LayoutList,
         href: "/plans/mixed",
         badge: "Custom Blend",
-        color: "bg-gradient-to-br from-neutral-600 to-neutral-400",
+        image: "/images/plans/mixed.png",
+        color: "from-neutral-900/60 via-transparent to-transparent",
         iconColor: "text-neutral-200",
         textColor: "text-neutral-50",
         btnColor: "bg-white text-neutral-900 hover:bg-neutral-100"
@@ -106,43 +111,76 @@ export default function PlansPage() {
                     </div>
 
                     {/* Plans Grid */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-                        {plans.map((plan, idx) => (
-                            <motion.div
-                                key={plan.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 + idx * 0.1 }}
-                                className={`rounded-3xl p-8 shadow-xl flex flex-col ${plan.color} text-white group relative overflow-hidden`}
-                            >
-                                {/* Decorative circle background */}
-                                <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-48 h-48 bg-white/10 rounded-full blur-2xl transition-transform group-hover:scale-110 duration-700" />
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
+                        {plans.map((plan, idx) => {
+                            // Uniform 2nd-row grid (50% each) for the first 4 cards
+                            // Mixed remains full width (100%)
+                            const isMixed = plan.id === "mixed";
+                            let colSpan = isMixed ? "md:col-span-12" : "md:col-span-6";
 
-                                <div className="relative z-10 flex flex-col h-full">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className={`p-4 rounded-2xl bg-white/10 backdrop-blur-md ${plan.iconColor}`}>
-                                            <plan.icon size={32} />
+                            return (
+                                <motion.div
+                                    key={plan.id}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: idx * 0.1, duration: 0.5 }}
+                                    whileHover={{ y: -10 }}
+                                    className={`${colSpan} rounded-[2.5rem] ${isMixed ? 'min-h-[400px]' : 'min-h-[500px]'} shadow-2xl flex flex-col group relative overflow-hidden bg-neutral-900 border border-white/10`}
+                                >
+                                    {/* background image with zoom effect */}
+                                    <div
+                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                                        style={{ backgroundImage: `url('${plan.image}')` }}
+                                    />
+                                    {/* dynamic gradient overlay - adjusted for transparency */}
+                                    <div className={`absolute inset-0 bg-gradient-to-t ${plan.color} opacity-60 transition-opacity duration-500 group-hover:opacity-40`} />
+
+                                    {/* Subtle vignette for edge definition */}
+                                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                                    <div className="relative z-10 flex flex-col h-full p-8 md:p-10">
+                                        <div className="flex items-center justify-between mb-auto">
+                                            <motion.div
+                                                initial={{ scale: 0.8, opacity: 0 }}
+                                                whileInView={{ scale: 1, opacity: 1 }}
+                                                className={`p-3 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 ${plan.iconColor} shadow-lg`}
+                                            >
+                                                <plan.icon size={24} />
+                                            </motion.div>
+                                            <span className={`text-[9px] uppercase tracking-[0.2em] font-black px-4 py-2 rounded-full bg-black/30 backdrop-blur-md ${plan.iconColor} border border-white/10`}>
+                                                {plan.badge}
+                                            </span>
                                         </div>
-                                        <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded-full bg-white/10 ${plan.iconColor} border border-white/5`}>
-                                            {plan.badge}
-                                        </span>
+
+                                        <div className="mt-auto pt-12">
+                                            <div className="space-y-4 mb-8">
+                                                <h3 className="text-5xl font-serif text-white tracking-tight drop-shadow-2xl leading-none">{plan.title}</h3>
+                                                <div className="flex flex-col gap-1">
+                                                    <p className={`text-3xl font-black ${plan.iconColor} font-mono tracking-tighter drop-shadow-xl`}>
+                                                        {plan.priceRange}
+                                                    </p>
+                                                    <span className="text-[10px] uppercase font-black tracking-[0.3em] text-white/60 drop-shadow-sm">
+                                                        invest per day / person
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <p className={`text-white/90 mb-10 leading-relaxed text-sm font-medium drop-shadow-md max-w-sm group-hover:text-white transition-colors`}>
+                                                {plan.description}
+                                            </p>
+
+                                            <Link
+                                                href={plan.href}
+                                                className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:scale-[1.02] ${plan.btnColor}`}
+                                            >
+                                                explore journey <ArrowRight size={16} />
+                                            </Link>
+                                        </div>
                                     </div>
-
-                                    <h3 className="text-3xl font-serif mb-2">{plan.title}</h3>
-                                    <p className={`text-xl font-bold mb-4 ${plan.iconColor}`}>{plan.priceRange}<span className="text-xs font-normal opacity-70 ml-1">per day/pax</span></p>
-                                    <p className={`${plan.textColor} mb-12 flex-grow leading-relaxed text-sm`}>
-                                        {plan.description}
-                                    </p>
-
-                                    <Link
-                                        href={plan.href}
-                                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-transform duration-300 hover:scale-[1.02] shadow-md ${plan.btnColor}`}
-                                    >
-                                        Explore Package <ArrowRight size={14} />
-                                    </Link>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
 
                     {/* Compare Section CTA */}
