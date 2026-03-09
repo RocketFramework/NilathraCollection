@@ -15,7 +15,7 @@ const allScopes: ServiceScope[] = [
     'Full End-to-End Luxury Handling'
 ];
 
-const styles = ['Budget', 'Premium', 'Luxury', 'Ultra Luxury VIP', 'Mixed'] as const;
+const styles = ['Regular', 'Premium', 'Luxury', 'Ultra VIP', 'Mixed'] as const;
 
 const STANDARD_DEFINITIONS: Record<string, {
     hotels: string;
@@ -23,26 +23,26 @@ const STANDARD_DEFINITIONS: Record<string, {
     service: string;
     inclusions: string[];
 }> = {
-    'Budget': {
-        hotels: '3-Star / Comfortable Guest Houses',
+    'Regular': {
+        hotels: '3-Star / Comfortable Guest Houses ($50 - $100/day)',
         vehicle: 'Compact Sedan / Shared Shuttle (Japanese/Indian)',
         service: 'Self-managed with 24/7 Remote Support',
         inclusions: ['Driver-cum-Guide', 'Essential Entrance Tickets', 'Standard Activity Bookings']
     },
     'Premium': {
-        hotels: '4-Star / Boutique Collection',
+        hotels: '4-Star / Boutique Collection ($150 - $400/day)',
         vehicle: 'Luxury Sedan / SUV (Toyota Premio/Allion/X-Trail)',
         service: 'Professional English Speaking Chauffeur Guide',
         inclusions: ['All Entrance Tickets', 'Curated Activity Bookings', 'Welcome Gift Pack', 'Bottled Water daily']
     },
     'Luxury': {
-        hotels: '5-Star / Signature Luxury Resorts',
+        hotels: '5-Star / Signature Luxury Resorts ($500 - $1000/day)',
         vehicle: 'Premium SUV / Luxury Van (Land Cruiser/Prado/KDH Luxury)',
         service: 'Expert Naturalist/National Guide & Dedicated Chauffeur',
         inclusions: ['VIP Fast-track Arrival', 'All Activities & Gear', 'Daily Spa/Wellness Session', 'Premium Dining Reservations', 'Personalized Itinerary Manager']
     },
-    'Ultra Luxury VIP': {
-        hotels: 'Ultra-Luxury Villas / Presidential Suites',
+    'Ultra VIP': {
+        hotels: 'Ultra-Luxury Villas / Presidential Suites ($5000 - $10000/day)',
         vehicle: 'Luxury Limousine / Private Helicopter Transfers',
         service: 'Private Butler, Concierge & Elite Guide Team',
         inclusions: ['Private Jet/Heli Charters', 'Exclusive "Money-can\'t-buy" Experiences', 'Daily Spa & Holistic Wellness', 'Personal Chef & Waitstaff', 'Full End-to-End White Glove Handling']
@@ -69,7 +69,7 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
                 numberOfSeats: profile.adults + profile.children,
                 departureCountry: profile.departureCountry || '',
                 preferredAirlines: '',
-                travelClass: profile.travelStyle === 'Ultra Luxury VIP' ? 'First Class' : profile.travelStyle === 'Luxury' ? 'Business' : profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
+                travelClass: profile.travelStyle === 'Ultra VIP' ? 'First Class' : profile.travelStyle === 'Luxury' ? 'Business' : profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
                 mealPreference: 'Standard',
                 baggage: '20kg',
                 dateFlexibility: 'Flexible (+/- 2 Days)',
@@ -255,10 +255,10 @@ export function ScopeAndProfileStep({ tripData, updateData }: { tripData: TripDa
 
                                     let alertMsg = '';
                                     if (budgetPerDay > 0) {
-                                        if (profile.travelStyle === 'Budget' && budgetPerDay < 90) alertMsg = 'Below minimum for Budget ($90/day/pax)';
-                                        else if (profile.travelStyle === 'Premium' && budgetPerDay < 180) alertMsg = 'Below minimum for Premium ($180/day/pax)';
-                                        else if (profile.travelStyle === 'Luxury' && budgetPerDay < 600) alertMsg = 'Below minimum for Luxury ($600/day/pax)';
-                                        else if (profile.travelStyle === 'Ultra Luxury VIP' && budgetPerDay < 1500) alertMsg = 'Below minimum for Ultra Luxury VIP ($1500/day/pax)';
+                                        if (profile.travelStyle === 'Regular' && budgetPerDay < 50) alertMsg = 'Below minimum for Regular ($50/day/pax)';
+                                        else if (profile.travelStyle === 'Premium' && budgetPerDay < 150) alertMsg = 'Below minimum for Premium ($150/day/pax)';
+                                        else if (profile.travelStyle === 'Luxury' && budgetPerDay < 500) alertMsg = 'Below minimum for Luxury ($500/day/pax)';
+                                        else if (profile.travelStyle === 'Ultra VIP' && budgetPerDay < 5000) alertMsg = 'Below minimum for Ultra VIP ($5000/day/pax)';
                                     }
 
                                     return (

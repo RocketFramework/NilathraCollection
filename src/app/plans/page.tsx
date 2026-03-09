@@ -7,40 +7,69 @@ import { motion } from "framer-motion";
 
 const plans = [
     {
-        id: "vip",
+        id: "ultra-vip",
         title: "Ultra VIP",
-        description: "The ultimate expression of luxury travel. Reserved for the world's most discerning travelers. Everything included, nothing overlooked.",
+        priceRange: "$5,000 - $10,000",
+        description: "Reserved for the world's most discerning travelers. Private jets, elite guides, and absolute seclusion.",
         icon: Crown,
-        href: "/plans/super-luxury-vip",
-        badge: "Ultra-Luxury",
-        color: "bg-gradient-to-br from-amber-800 to-amber-600",
+        href: "/plans/ultra-vip",
+        badge: "The Pinnacle",
+        color: "bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-800",
+        iconColor: "text-amber-400",
+        textColor: "text-neutral-300",
+        btnColor: "bg-amber-500 text-black hover:bg-amber-400"
+    },
+    {
+        id: "luxury",
+        title: "Luxury",
+        priceRange: "$500 - $1,000",
+        description: "5-star signature resorts, premium SUV transport, and dedicated personalized itinerary management.",
+        icon: Gem,
+        href: "/plans/luxury",
+        badge: "Exquisite Comfort",
+        color: "bg-gradient-to-br from-amber-900 to-amber-700",
         iconColor: "text-amber-200",
-        textColor: "text-amber-100",
+        textColor: "text-amber-50",
         btnColor: "bg-white text-amber-900 hover:bg-amber-50"
     },
     {
-        id: "deluxe",
-        title: "Deluxe Collection",
-        description: "Refined luxury combining heritage and contemporary style. Features boutique gems, premium transport, and gourmet culinary journeys.",
-        icon: Gem,
-        href: "/plans/deluxe-collection",
-        badge: "Refined Luxury",
+        id: "premium",
+        title: "Premium",
+        priceRange: "$150 - $400",
+        description: "Boutique collection properties, luxury sedan transport, and curated culinary adventures.",
+        icon: Sparkles,
+        href: "/plans/premium",
+        badge: "Refined Style",
         color: "bg-gradient-to-br from-logo-blue to-blue-900",
         iconColor: "text-blue-200",
-        textColor: "text-blue-100",
+        textColor: "text-blue-50",
         btnColor: "bg-white text-logo-blue hover:bg-neutral-50"
     },
     {
-        id: "standard",
-        title: "Standard Premium",
-        description: "Excellence in comfort and service at Sri Lanka's leading 5-star establishments. Perfect balance of authenticity and premium comfort.",
+        id: "regular",
+        title: "Regular",
+        priceRange: "$50 - $100",
+        description: "Exceptional 3-star comfort and authentic experiences with 24/7 remote specialist support.",
         icon: Check,
-        href: "/plans/standard-premium",
-        badge: "5-Star Excellence",
+        href: "/plans/regular",
+        badge: "Authentic Value",
         color: "bg-gradient-to-br from-green-800 to-green-600",
         iconColor: "text-green-200",
-        textColor: "text-green-100",
+        textColor: "text-green-50",
         btnColor: "bg-white text-green-900 hover:bg-green-50"
+    },
+    {
+        id: "mixed",
+        title: "Mixed Collection",
+        priceRange: "Flexible",
+        description: "A tailored blend of different tiers throughout your journey for the ultimate personalized experience.",
+        icon: LayoutList,
+        href: "/plans/mixed",
+        badge: "Custom Blend",
+        color: "bg-gradient-to-br from-neutral-600 to-neutral-400",
+        iconColor: "text-neutral-200",
+        textColor: "text-neutral-50",
+        btnColor: "bg-white text-neutral-900 hover:bg-neutral-100"
     }
 ];
 
@@ -77,7 +106,7 @@ export default function PlansPage() {
                     </div>
 
                     {/* Plans Grid */}
-                    <div className="grid lg:grid-cols-3 gap-8 mb-16">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
                         {plans.map((plan, idx) => (
                             <motion.div
                                 key={plan.id}
@@ -94,21 +123,22 @@ export default function PlansPage() {
                                         <div className={`p-4 rounded-2xl bg-white/10 backdrop-blur-md ${plan.iconColor}`}>
                                             <plan.icon size={32} />
                                         </div>
-                                        <span className={`text-xs uppercase tracking-widest font-semibold px-4 py-2 rounded-full bg-white/10 ${plan.iconColor}`}>
+                                        <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded-full bg-white/10 ${plan.iconColor} border border-white/5`}>
                                             {plan.badge}
                                         </span>
                                     </div>
 
-                                    <h3 className="text-3xl font-serif mb-4">{plan.title}</h3>
-                                    <p className={`${plan.textColor} mb-12 flex-grow leading-relaxed`}>
+                                    <h3 className="text-3xl font-serif mb-2">{plan.title}</h3>
+                                    <p className={`text-xl font-bold mb-4 ${plan.iconColor}`}>{plan.priceRange}<span className="text-xs font-normal opacity-70 ml-1">per day/pax</span></p>
+                                    <p className={`${plan.textColor} mb-12 flex-grow leading-relaxed text-sm`}>
                                         {plan.description}
                                     </p>
 
                                     <Link
                                         href={plan.href}
-                                        className={`w-full py-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-transform duration-300 hover:scale-105 shadow-md ${plan.btnColor}`}
+                                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-transform duration-300 hover:scale-[1.02] shadow-md ${plan.btnColor}`}
                                     >
-                                        Explore Package <ArrowRight size={18} />
+                                        Explore Package <ArrowRight size={14} />
                                     </Link>
                                 </div>
                             </motion.div>

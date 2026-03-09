@@ -6,22 +6,22 @@ import { useEffect } from "react";
 
 const getRecommendedMode = (totalPax: number, style: TravelStyle): TransportBooking['mode'] => {
     if (totalPax <= 3) {
-        if (style === 'Budget') return 'SMALL_BUDGET_SEDAN';
+        if (style === 'Regular') return 'SMALL_BUDGET_SEDAN';
         if (style === 'Premium') return 'SMALL_PREMIUM_SEDAN';
         if (style === 'Luxury') return 'SMALL_LUXURY_SUV';
-        if (style === 'Ultra Luxury VIP') return 'SMALL_ULTRA_VIP_EUROPE_SUV';
+        if (style === 'Ultra VIP') return 'SMALL_ULTRA_VIP_EUROPE_SUV';
         return 'SMALL_PREMIUM_SEDAN';
     } else if (totalPax <= 9) {
-        if (style === 'Budget') return 'MEDIUM_BUDGET_VAN';
+        if (style === 'Regular') return 'MEDIUM_BUDGET_VAN';
         if (style === 'Premium') return 'MEDIUM_PREMIUM_HIGHROOF_VAN';
         if (style === 'Luxury') return 'MEDIUM_LUXURY_EXECUTIVE_VAN';
-        if (style === 'Ultra Luxury VIP') return 'MEDIUM_ULTRA_VIP_EXECUTIVE_VAN';
+        if (style === 'Ultra VIP') return 'MEDIUM_ULTRA_VIP_EXECUTIVE_VAN';
         return 'MEDIUM_PREMIUM_HIGHROOF_VAN';
     } else {
-        if (style === 'Budget') return 'LARGE_BUDGET_MINI_COACH';
+        if (style === 'Regular') return 'LARGE_BUDGET_MINI_COACH';
         if (style === 'Premium') return 'LARGE_PREMIUM_COACH';
         if (style === 'Luxury') return 'LARGE_LUXURY_EXECUTIVE_COACH';
-        if (style === 'Ultra Luxury VIP') return 'LARGE_ULTRA_VIP_EUROPE_COACH';
+        if (style === 'Ultra VIP') return 'LARGE_ULTRA_VIP_EUROPE_COACH';
         return 'LARGE_PREMIUM_COACH';
     }
 };

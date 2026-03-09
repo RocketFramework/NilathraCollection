@@ -10,7 +10,7 @@ export type ServiceScope =
     | 'Visa Assistance'
     | 'Full End-to-End Luxury Handling';
 
-export type TravelStyle = 'Budget' | 'Premium' | 'Luxury' | 'Ultra Luxury VIP' | 'Mixed';
+export type TravelStyle = 'Regular' | 'Premium' | 'Luxury' | 'Ultra VIP' | 'Mixed';
 
 export type TripStatus =
     | 'Draft'

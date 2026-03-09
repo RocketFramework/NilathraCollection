@@ -161,6 +161,12 @@ export class TourService {
                     name,
                     phone_number,
                     note,
+                    budget,
+                    start_date,
+                    duration_nights,
+                    adults,
+                    children,
+                    infants,
                     details:request_details(*)
                 ),
                 tourist:users!tours_tourist_id_fkey(
@@ -193,14 +199,25 @@ export class TourService {
             clientPhone: reqInfo?.phone_number?.toString() || touristProfile.phone || '',
             status: tourMsg.status as any,
             profile: {
-                adults: details.adults || 2,
-                children: details.children || 0,
-                infants: 0,
-                arrivalDate: details.start_date || '',
-                departureDate: details.end_date || '',
-                durationDays: details.nights || 0,
-                budgetTotal: details.estimated_price || 0,
-                budgetPerPerson: details.estimated_price && details.adults ? details.estimated_price / details.adults : 0,
+                adults: reqInfo?.adults || details.adults || 2,
+                children: reqInfo?.children || details.children || 0,
+                infants: reqInfo?.infants || 0,
+                arrivalDate: reqInfo?.start_date || details.start_date || '',
+                departureDate: details.end_date || (() => {
+                    const start = reqInfo?.start_date || details.start_date;
+                    const nights = reqInfo?.duration_nights || details.nights;
+                    if (start && nights) {
+                        const d = new Date(start);
+                        d.setDate(d.getDate() + nights);
+                        return d.toISOString().split('T')[0];
+                    }
+                    return '';
+                })(),
+                durationDays: (reqInfo?.duration_nights || details.nights || 0) + ((reqInfo?.start_date || details.start_date) ? 1 : 0),
+                budgetTotal: reqInfo?.budget || details.estimated_price || 0,
+                budgetPerPerson: (reqInfo?.budget || details.estimated_price) && (reqInfo?.adults || details.adults)
+                    ? (reqInfo?.budget || details.estimated_price) / (reqInfo?.adults || details.adults)
+                    : 0,
                 travelStyle: details.budget_tier ? 'Premium' : 'Luxury',
                 specialConditions: {
                     dietary: details.special_requirements ? 'See internal notes' : '',
@@ -216,7 +233,7 @@ export class TourService {
                 costs: { flights: 0, hotels: 0, transport: 0, activities: 0, guide: 0, misc: 0, commission: 0, tax: 0 },
                 purchaseOrders: [],
                 supplierInvoices: [],
-                sellingPrice: details.estimated_price || 0
+                sellingPrice: reqInfo?.budget || details.estimated_price || 0
             }
         };
 
