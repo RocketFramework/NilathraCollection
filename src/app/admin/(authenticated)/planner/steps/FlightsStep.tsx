@@ -23,7 +23,7 @@ export function FlightsStep({ tripData, updateFlights }: { tripData: TripData, u
             numberOfSeats: tripData.profile.adults + tripData.profile.children,
             departureCountry: tripData.profile.departureCountry || '',
             preferredAirlines: '',
-            travelClass: tripData.profile.travelStyle === 'Ultra Luxury VIP' ? 'First Class' : tripData.profile.travelStyle === 'Luxury' ? 'Business' : tripData.profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
+            travelClass: tripData.profile.travelStyle === 'Ultra VIP' ? 'First Class' : tripData.profile.travelStyle === 'Luxury' ? 'Business' : tripData.profile.travelStyle === 'Premium' ? 'Premium Economy' : 'Economy',
             mealPreference: 'Standard',
             baggage: 'Standard 20kg',
             dateFlexibility: 'Fixed Dates',

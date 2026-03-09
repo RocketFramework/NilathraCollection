@@ -51,10 +51,10 @@ export default function Hero() {
                     transition={{ duration: 0.8, delay: 1 }}
                     className="flex flex-col md:flex-row gap-6"
                 >
-                    <Link href="/custom-plan" className="luxury-button border border-white/20">
+                    <Link href="/custom-plan" className="luxury-button border border-white/20 rounded-full">
                         Design My Luxury Experience
                     </Link>
-                    <Link href="/destinations" className="luxury-button-outline !text-white !border-white hover:!bg-white hover:!text-brand-green">
+                    <Link href="/destinations" className="luxury-button-outline !text-white !border-white hover:!bg-white hover:!text-brand-green rounded-full">
                         Explore Destinations
                     </Link>
                 </motion.div>

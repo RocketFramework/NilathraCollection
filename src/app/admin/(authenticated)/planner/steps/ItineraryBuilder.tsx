@@ -200,7 +200,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
                 }
 
                 // Default transport mode based on new grouping
-                const defaultMode: TransportBooking['mode'] = tripData.profile.travelStyle === 'Ultra Luxury VIP' ? 'SMALL_ULTRA_VIP_EUROPE_SUV' : 'SMALL_PREMIUM_SEDAN';
+                const defaultMode: TransportBooking['mode'] = tripData.profile.travelStyle === 'Ultra VIP' ? 'SMALL_ULTRA_VIP_EUROPE_SUV' : 'SMALL_PREMIUM_SEDAN';
 
                 transports.push({
                     id: crypto.randomUUID(),
