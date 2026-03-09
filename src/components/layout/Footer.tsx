@@ -113,6 +113,7 @@ export default function Footer() {
                         <li><Link href="/packages" className="text-white/70 hover:text-white transition-colors">Travel Packages</Link></li>
                         <li><Link href="/custom-plan" className="text-white/70 hover:text-white transition-colors">Tailored Journey</Link></li>
                         <li><Link href="/about" className="text-white/70 hover:text-white transition-colors">The Collection</Link></li>
+                        <li><Link href="/reference" className="text-white/70 hover:text-white transition-colors">Travel Reference</Link></li>
                     </ul>
                 </div>
 

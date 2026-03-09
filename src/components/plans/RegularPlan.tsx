@@ -137,7 +137,7 @@ export default function RegularPlan() {
         >
             {/* World-Class Header */}
             <div className="relative h-[700px] overflow-hidden">
-                <div className="absolute inset-0 bg-[url('/brain/5c0b7cbc-b65d-4fcc-8a86-bcd055ad1798/sri_lanka_budget_guesthouse_1773054870836.png')] bg-cover bg-center" />
+                <div className="absolute inset-0 bg-[url('/images/plans/regular_sri_lanka.png')] bg-cover bg-center" />
                 <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-black/10" />
 
                 <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-10">

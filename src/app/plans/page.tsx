@@ -212,6 +212,45 @@ export default function PlansPage() {
                         </Link>
                     </motion.div>
 
+                    {/* Travel Essentials */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className="bg-logo-blue rounded-[3rem] p-12 md:p-16 mb-24 relative overflow-hidden text-white shadow-2xl"
+                    >
+                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?q=80&w=2033')] bg-cover bg-center opacity-20" />
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                            <div className="max-w-2xl">
+                                <h3 className="text-3xl md:text-4xl font-serif mb-6 leading-tight">Travel Essentials</h3>
+                                <p className="text-white/80 text-lg mb-8 leading-relaxed">
+                                    Before embarking on your journey, ensure all necessary travel documents are in order. Most visitors to Sri Lanka require an Electronic Travel Authorization (ETA).
+                                </p>
+                                <div className="flex flex-wrap gap-4">
+                                    <Link
+                                        href="https://eta.gov.lk/slvisa/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-3 px-8 py-4 bg-brand-gold text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-brand-gold/90 transition-all hover:scale-[1.05]"
+                                    >
+                                        Obtain Sri Lanka Visa <ArrowRight size={16} />
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="w-full md:w-auto">
+                                <div className="p-8 bg-white/10 backdrop-blur-xl rounded-[2.5rem] border border-white/20">
+                                    <h4 className="font-serif text-2xl mb-4">Official E-Visa Site</h4>
+                                    <p className="text-sm text-white/60 leading-relaxed mb-6">
+                                        For guaranteed processing and standard rates, always use the official Sri Lankan Government portal.
+                                    </p>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-gold">
+                                        Verified External Resource
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+
                     {/* FAQ Section */}
                     <motion.div
                         initial={{ opacity: 0 }}

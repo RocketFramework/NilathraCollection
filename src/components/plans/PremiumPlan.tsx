@@ -138,7 +138,7 @@ export default function PremiumPlan() {
         >
             {/* World-Class Header */}
             <div className="relative h-[700px] overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1546768292-fb12f6c92568?q=80&w=2070')] bg-cover bg-center" />
+                <div className="absolute inset-0 bg-[url('/images/plans/premium_sri_lanka.png')] bg-cover bg-center" />
                 <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-black/10" />
 
                 <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-10">
