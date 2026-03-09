@@ -1,69 +1,79 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Star, Gem, ArrowRight } from "lucide-react";
+import { Check, Star, Gem, ArrowRight, Crown, LayoutList } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 const packages = [
     {
-        title: "Super Luxury VIP",
-        icon: Gem,
-        description: "The ultimate expression of Sri Lankan hospitality. Private jets, presidential suites, and dedicated concierge.",
+        title: "Ultra VIP",
+        subtitle: "The Sovereignty Collection",
+        icon: Crown,
+        description: "Reserved for the world's most discerning travelers. Absolute privacy, bespoke luxury, and peerless security.",
         features: [
-            "Sri Lanka's most iconic locations",
-            "Private villas & Boutique resorts",
-            "Private chauffeur & Luxury vehicles",
-            "Dedicated travel guide 24/7",
-            "Exclusive VIP handling at airports",
+            "Private Jet-Side Arrival & Tarmac Clearance",
+            "Standby Helicopter for Trip Duration",
+            "24/7 Close Protection Detail (CPD)",
+            "Private Estate Buyouts & 1:1 Staffing",
+            "Absolute NDA & Identity Protection",
         ],
         color: "bg-brand-green",
         textColor: "text-white",
         accent: "text-brand-gold",
+        href: "/plans/ultra-vip",
+        image: "/images/hero_ultra_vip.png"
     },
     {
-        title: "Deluxe Collection",
+        title: "Luxury Collection",
+        subtitle: "The Sapphire Collection",
         icon: Star,
-        description: "Exceptional comfort and refined elegance. Premium 5-star properties and professional guidance.",
+        description: "Exceptional 5-star elegance. Hand-picked signature resorts, elite guidance, and curated gastronomy.",
         features: [
-            "High-end 5-star hotels",
-            "Professional guide & transport",
-            "Curated cultural experiences",
-            "Balance of comfort & exploration",
-            "Premium dining experiences",
+            "Iconic Signature 5-Star Resorts",
+            "Private Premium SUV & Elite Chauffeur",
+            "Daily Signature Half-Board (HB) Dining",
+            "Curated Cultural Tours & Private Access",
+            "Daily Ayurvedic/Balinese Spa Sessions",
         ],
         color: "bg-white",
         textColor: "text-brand-charcoal",
         accent: "text-brand-green",
+        href: "/plans/luxury"
     },
     {
-        title: "Standard Premium",
-        icon: Check,
-        description: "Reliable, well-organized, and comfortable. Experience the island's beauty with curated standard excellence.",
+        title: "Premium Plan",
+        subtitle: "The Emerald Collection",
+        icon: Gem,
+        description: "Reliable, well-organized excellence. Experience the island's beauty with 3-4 star curated excellence.",
         features: [
-            "Standard premium hotels",
-            "Safe and reliable transport",
-            "Expert local guides",
-            "Seamless itinerary planning",
-            "Authentic local experiences",
+            "Hand-picked 3-4 Star Signature Hotels",
+            "Private AC Sedan/Van & Expert Driver",
+            "Daily Half-Board (HB) Dining Selection",
+            "Guided Tours of Major Historic Sites",
+            "Entrance Fees to National Parks Included",
         ],
         color: "bg-[#EAE7E0]",
         textColor: "text-brand-charcoal",
         accent: "text-brand-green",
+        href: "/plans/premium"
     },
     {
-        title: "The Custom Mix",
-        icon: ArrowRight,
-        description: "Your journey, your way. Mix VIP and Deluxe experiences across different destinations.",
+        title: "Mixed Collection",
+        subtitle: "Total Fluidity",
+        icon: LayoutList,
+        description: "Your journey, your way. Mix and match tiers across destinations to create your bespoke escape.",
         features: [
-            "Flexible travel planning",
-            "Tier mixing per destination",
-            "Personalized itinerary logic",
-            "Scalable luxury options",
-            "Expert consulting for mix",
+            "Flexible Tier Mixing per Destination",
+            "Dynamic Pacing (Activity vs. Serenity)",
+            "Combined Jet & Ground Transport",
+            "Bespoke Masterplans around Your Persona",
+            "Unified Proposal at Multiple Points",
         ],
         color: "bg-brand-gold",
         textColor: "text-white",
         accent: "text-brand-green",
+        href: "/plans/mixed"
     },
 ];
 
@@ -74,8 +84,8 @@ export default function PackagesSection() {
                 <div className="text-center mb-20">
                     <span className="section-subtitle">Our Tiers</span>
                     <h2 className="section-title">The Art of Travel</h2>
-                    <p className="text-brand-charcoal/60 max-w-2xl mx-auto font-light">
-                        Select the perfect level of luxury for your Sri Lankan odyssey. Each tier is meticulously designed to provide an unforgettable experience.
+                    <p className="text-brand-charcoal/60 max-w-2xl mx-auto font-light leading-relaxed">
+                        Select the perfect level of exclusivity for your Sri Lankan odyssey. Each tier is meticulously architected to provide a peerless experience.
                     </p>
                 </div>
 
@@ -87,29 +97,44 @@ export default function PackagesSection() {
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.1 }}
                             viewport={{ once: true }}
-                            className={`p-10 flex flex-col h-full rounded-sm ${pkg.color} ${pkg.textColor} shadow-sm border border-brand-charcoal/5 group hover:shadow-2xl transition-all duration-500`}
+                            className={`p-10 flex flex-col h-full rounded-sm ${pkg.color} ${pkg.textColor} shadow-sm border border-brand-charcoal/5 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden`}
                         >
-                            <pkg.icon className={`mb-8 ${pkg.accent}`} size={32} />
-                            <h3 className="font-serif text-2xl mb-4">{pkg.title}</h3>
-                            <p className="text-sm opacity-80 mb-8 leading-relaxed italic">
-                                {pkg.description}
-                            </p>
+                            {pkg.image && (
+                                <>
+                                    <div
+                                        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110 group-hover:scale-125 transition-transform duration-[2s]"
+                                        style={{ backgroundImage: `url('${pkg.image}')` }}
+                                    />
+                                    <div className="absolute inset-0 bg-brand-green/85 group-hover:bg-brand-green/75 transition-colors duration-500" />
+                                </>
+                            )}
 
-                            <ul className="space-y-4 mb-10 flex-grow">
-                                {pkg.features.map((feature) => (
-                                    <li key={feature} className="flex gap-3 text-sm items-start">
-                                        <Check size={16} className={`shrink-0 mt-0.5 ${pkg.accent}`} />
-                                        <span className="opacity-90">{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="relative z-10 h-full flex flex-col">
+                                <div className="flex items-center justify-between mb-8">
+                                    <pkg.icon className={pkg.accent} size={32} />
+                                    <span className="text-[10px] uppercase tracking-[0.3em] opacity-60 font-black">{pkg.subtitle}</span>
+                                </div>
+                                <h3 className="font-serif text-2xl mb-4">{pkg.title}</h3>
+                                <p className="text-sm opacity-80 mb-8 leading-relaxed italic">
+                                    {pkg.description}
+                                </p>
 
-                            <Link
-                                href="/packages"
-                                className={`flex items-center gap-2 text-sm font-medium tracking-widest uppercase transition-all group-hover:gap-4 ${pkg.accent}`}
-                            >
-                                Learn More <ArrowRight size={16} />
-                            </Link>
+                                <ul className="space-y-4 mb-10 flex-grow">
+                                    {pkg.features.map((feature) => (
+                                        <li key={feature} className="flex gap-3 text-sm items-start">
+                                            <Check size={16} className={`shrink-0 mt-0.5 ${pkg.accent}`} />
+                                            <span className="opacity-90">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <Link
+                                    href={pkg.href}
+                                    className={`flex items-center gap-2 text-sm font-medium tracking-widest uppercase transition-all group-hover:gap-4 ${pkg.accent}`}
+                                >
+                                    Learn More <ArrowRight size={16} />
+                                </Link>
+                            </div>
                         </motion.div>
                     ))}
                 </div>
