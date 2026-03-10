@@ -1,15 +1,16 @@
 import { MetadataRoute } from 'next';
+import { blogPosts } from '@/data/blog-posts';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://nilathra.com';
 
-    // In a real scenario, you'd fetch routes or packages from a DB
-    // For now, we'll include the main static routes
-    const routes = [
+    // Static routes
+    const staticRoutes = [
         '',
         '/about',
         '/packages',
         '/destinations',
+        '/blog',
         '/careers',
         '/custom-plan',
         '/contact',
@@ -20,5 +21,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: route === '' ? 1 : 0.8,
     }));
 
-    return routes;
+    // Dynamic blog routes
+    const blogRoutes = blogPosts.map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: new Date(post.date),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+    }));
+
+    return [...staticRoutes, ...blogRoutes];
 }

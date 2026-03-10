@@ -2,6 +2,12 @@ import MainLayout from "@/components/layout/MainLayout";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Calendar, Check, Camera, Coffee } from "lucide-react";
+import ColomboUrbanSection from "@/components/destinations/ColomboUrbanSection";
+import GalleHeritageSection from "@/components/destinations/GalleHeritageSection";
+import SigiriyaAncientSection from "@/components/destinations/SigiriyaAncientSection";
+import EllaMistySection from "@/components/destinations/EllaMistySection";
+import NuwaraEliyaHeritageSection from "@/components/destinations/NuwaraEliyaHeritageSection";
+import WeligamaMirissaSection from "@/components/destinations/WeligamaMirissaSection";
 import React from "react";
 
 // Mock data for destinations
@@ -9,13 +15,14 @@ const destinationsData: Record<string, any> = {
     sigiriya: {
         name: "Sigiriya",
         tagline: "The Lion Rock Fortress",
-        heroImage: "/images/sigiriya_hero.png",
-        description: "Sigiriya is one of the most valuable historical monuments of Sri Lanka. Referred by locals as the Eighth Wonder of the World, this ancient palace and fortress complex has significant archaeological importance and attracts thousands of tourists every year. It is probably the most visited tourist destination in Sri Lanka.",
+        heroImage: "/images/sigiriya_rock.jpg",
+        description: "Rising 200m above the jungle, Sigiriya is an ancient palace-fortress of incomparable majesty. This UNESCO World Heritage site, the 'Lion Rock', is a masterpiece of 5th-century urban planning, hydraulic engineering, and artistic expression. From the Mirror Wall's ancient graffiti to the vivid frescoes and the massive lion's paws guarding the final ascent, Sigiriya offers a profound encounter with Sri Lanka's royal heritage.",
         highlights: [
-            "Climb the 1200 steps to the summit",
-            "Marvel at the ancient frescoes",
-            "Explore the royal water gardens",
-            "Watch the sunset from Pidurangala Rock",
+            "Private early-dawn climb with an expert archaeologist",
+            "Viewing the 'Sigiriya Damsels' ancient frescoes",
+            "Exploring the world's oldest landscaped water gardens",
+            "Luxury jungle breakfast with a view of the fortress",
+            "Private 'Elephant Corridor' jeep safari nearby",
         ],
         bestTime: "January to April",
         experiences: [
@@ -32,13 +39,14 @@ const destinationsData: Record<string, any> = {
     galle: {
         name: "Galle",
         tagline: "Colonial Charm & Ocean Breeze",
-        heroImage: "/images/galle_hero.png",
-        description: "Galle is a jewel. A UNESCO World Heritage site, this city is a mosaic of colonial history and tropical beauty. The Dutch Fort is the heartbeat of Galle, housing boutique hotels, chic cafes, and art galleries within its ancient ramparts.",
+        heroImage: "/images/galle_fort.jpg",
+        description: "Galle is a jewel where history meets the horizon. A UNESCO World Heritage site, the city is an intricate mosaic of colonial architecture and tropical elegance. The Dutch Fort is the heartbeat of Galle, housing luxury boutique villas, eclectic designer shops, and artisanal cafes within its ancient granite ramparts. Every cobblestone street tells a story of the VOC era, now reimagined as a sophisticated sanctuary for the modern traveler.",
         highlights: [
-            "Walk the ramparts at sunset",
-            "Explore the labyrinth of colonial streets",
-            "Visit the iconic white lighthouse",
-            "Relax on the pristine beaches of Unawatuna",
+            "Private heritage walk with a local historian",
+            "Sunset champagne at the Triton Bastion",
+            "Whale watching expedition from the harbor",
+            "Luxury villa stay within the historic Fort",
+            "Curated 'Chef's Table' dining experience",
         ],
         bestTime: "December to March",
         experiences: [
@@ -101,13 +109,14 @@ const destinationsData: Record<string, any> = {
     colombo: {
         name: "Colombo",
         tagline: "Luxury Cosmopolitan Hub",
-        heroImage: "/images/colombo_hero.png",
-        description: "A dynamic metropolis where colonial mansions stand alongside modern skyscrapers. Colombo is the gateway to Sri Lanka, offering high-end shopping, gourmet dining, and a vibrant nightlife.",
+        heroImage: "/images/colombo_morning_drone.png",
+        description: "A vibrant fusion of colonial-era heritage and ultra-modern ambition, Colombo is the dynamic heartbeat of Sri Lanka. As the island's commercial capital and a burgeoning global hub, the city offers a sophisticated blend of world-class shopping at One Galle Face, exquisite fine dining, and meticulously preserved architecture. From the iconic Lotus Tower piercing the skyline to the historic grandeur of the Galle Face Hotel, Colombo provides a multifaceted luxury experience that serves as the perfect introduction or finale to your Sri Lankan journey.",
         highlights: [
-            "High tea at the Galle Face Hotel",
-            "Luxury shopping at One Galle Face",
-            "Private city heritage tour",
-            "Sunset at Beira Lake",
+            "Cinematic sunset views from the Lotus Tower rooftop",
+            "Gourmet 'Seafood Symphony' dining at Minister of Crab",
+            "Private architectural tour of Geoffrey Bawa's 'No. 11'",
+            "Antique car city cruise through the colonial Fort district",
+            "Curated shopping experiences at exclusive designer boutiques",
         ],
         bestTime: "December to March",
         experiences: [
@@ -123,14 +132,15 @@ const destinationsData: Record<string, any> = {
     },
     ella: {
         name: "Ella",
-        tagline: "Highlands & Tea Estates",
+        tagline: "The Misty Highland Sanctuary",
         heroImage: "/images/ella_hero.png",
-        description: "Ella is a small town in the Badulla District of Uva Province, Sri Lanka. It is approximately 200 kilometres east of Colombo and is situated at an elevation of 1,041 metres above sea level. The area has a rich bio-diversity, dense with numerous varieties of flora and fauna.",
+        description: "Perched amidst the emerald peaks of the Central Highlands, Ella is a mist-shrouded sanctuary for nature lovers and seekers of serenity. Famous for its sweeping mountain vistas and the iconic Nine Arch Bridge, this charming village offers a refreshing escape from the tropical heat. With its lush tea plantations, hidden waterfalls, and dramatic rock formations, Ella provides an immersive encounter with the raw beauty of Sri Lanka's hill country.",
         highlights: [
-            "Walk across the Nine Arch Bridge",
-            "Sunrise trek to Little Adam's Peak",
-            "Visit the Ravana Falls",
-            "Luxury tea tasting experience",
+            "Scenic private hike to the summit of Little Adam's Peak",
+            "Sunset views over the iconic Nine Arch Bridge",
+            "Curated tea tasting at a historic colonial factory",
+            "Luxury villa stay with panoramic views of Ella Gap",
+            "Private waterfall picnic at Ravana Falls",
         ],
         bestTime: "January to May",
         experiences: [
@@ -144,20 +154,20 @@ const destinationsData: Record<string, any> = {
             { name: "Mist Valley Inn (Standard)", type: "Comfort" },
         ]
     },
-    bentota: {
-        name: "Bentota",
-        tagline: "Golden Sands & River Safaris",
-        heroImage: "/images/bentota_hero.png",
-        description: "Bentota is the jewel of the south-western coast, where the river meets the sea. Famous for its broad, golden beaches and calm waters, it is the ultimate destination for water sports enthusiasts and those seeking refined coastal relaxation.",
+    "weligama-mirissa": {
+        name: "Weligama & Mirissa",
+        tagline: "The Southern Rhythm",
+        heroImage: "/images/tangalle.jpg",
+        description: "Experience the ultimate coastal synergy where the golden sands of Weligama meet the vibrant bays of Mirissa. This southern duo offers a sophisticated blend of world-class surfing, intimate coastal coves, and the island's premier whale watching expeditions. Whether you're catching waves in the crescent bay of Weligama or watching the sunset from Mirissa's Parrot Rock, the southern coast pulses with a refined energy you won't find anywhere else.",
         highlights: [
-            "Private boat safari on the Madu River",
-            "Visit the Brief Garden by Bevis Bawa",
-            "Sunset dinner on the pristine beach",
-            "Luxury ayurvedic wellness treatments",
+            "Private yacht charter for whale watching",
+            "Luxury surf camp experience in Weligama Bay",
+            "Sunset cocktails at secluded Mirissa beach clubs",
+            "Gourmet seafood dining by the Indian Ocean",
+            "Private guided tour of the southern coastline",
         ],
         bestTime: "November to April",
         experiences: [
-            { name: "Madu River Private Safari", icon: MapPin },
             { name: "Archery & Water Sports", icon: Coffee },
             { name: "Turtle Hatchery Visit", icon: Camera },
         ],
@@ -169,14 +179,15 @@ const destinationsData: Record<string, any> = {
     },
     "nuwara-eliya": {
         name: "Nuwara Eliya",
-        tagline: "Tea Estates & Misty Hills",
-        heroImage: "/images/nuwara_eliya_hero.png",
-        description: "Known as 'Little England', Nuwara Eliya is nestled in the heart of the central highlands. It is famous for its cool climate, colonial-era architecture, and vast emerald tea plantations that produce some of the world's finest Ceylon tea.",
+        tagline: "The Little England of Sri Lanka",
+        heroImage: "/images/nuwara_eliya.jpg",
+        description: "Elegant, nostalgic, and perpetually cool, Nuwara Eliya is the quintessential highland retreat. Known as 'Little England' for its colonial-era charm and manicured gardens, the city is surrounded by some of the world's most famous tea estates. From the tranquil Gregory Lake to the historic Hill Club, Nuwara Eliya offers a refined sanctuary where the air is fresh and the pace of life gracefully slows down.",
         highlights: [
-            "Private tea factory & estate tour",
-            "High tea at the historic Grand Hotel",
-            "Visit Horton Plains & World's End",
-            "Boat ride on Lake Gregory",
+            "Private high-tea at a historic colonial bungalow",
+            "Guided tour of a premier Ceylon tea factory",
+            "Horseback riding through the misty highland plains",
+            "Bespoke dining experience overlooking Gregory Lake",
+            "Exclusive access to the hill country's elite clubs",
         ],
         bestTime: "February to May",
         experiences: [
@@ -335,6 +346,24 @@ export default function DestinationPage({ params }: { params: Promise<{ slug: st
                     </aside>
                 </div>
             </section>
+
+            {/* Colombo Specific Elaborated Content */}
+            {slug === "colombo" && <ColomboUrbanSection />}
+
+            {/* Galle Specific Elaborated Content */}
+            {slug === "galle" && <GalleHeritageSection />}
+
+            {/* Sigiriya Specific Elaborated Content */}
+            {slug === "sigiriya" && <SigiriyaAncientSection />}
+
+            {/* Ella Specific Elaborated Content */}
+            {slug === "ella" && <EllaMistySection />}
+
+            {/* Nuwara Eliya Specific Elaborated Content */}
+            {slug === "nuwara-eliya" && <NuwaraEliyaHeritageSection />}
+
+            {/* Weligama & Mirissa Specific Elaborated Content */}
+            {slug === "weligama-mirissa" && <WeligamaMirissaSection />}
 
             {/* Dynamic CTA */}
             <section className="py-24 px-6 md:px-12 bg-brand-green text-white text-center">

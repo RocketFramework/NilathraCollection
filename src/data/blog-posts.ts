@@ -12,6 +12,52 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
     {
+        title: "Weligama: The Premier Luxury Surf Sanctuary of Sri Lanka",
+        slug: "weligama-luxury-surf-sanctuary",
+        date: "March 11, 2026",
+        author: "Nilathra Editorial",
+        category: "Destinations",
+        readingTime: "6 min read",
+        image: "/images/weligama_surfing.png",
+        excerpt: "Discover the perfect fusion of world-class waves and refined coastal living. Weligama is redefining the luxury surf experience in the Indian Ocean.",
+        content: `
+# Weligama: The Premier Luxury Surf Sanctuary of Sri Lanka
+
+For the discerning traveler, the lure of the ocean is often about more than just the view—it's about the rhythm of the waves. Weligama, a crescent-shaped bay on Sri Lanka's southern coast, has emerged as the definitive destination for those who seek the perfect synergy between world-class surfing and impeccably refined coastal living.
+
+## The Rhythm of the Bay
+
+Weligama—meaning 'Sandy Village'—boasts a unique geography that creates exceptionally consistent, gentle breaks. This makes it an ideal sanctuary for both the novice eager to catch their first wave and the seasoned surfer looking for long, elegant rides. The bay's expansive shoreline ensures that even at its most vibrant, there is always a sense of space and serenity.
+
+### Why Weligama is the Luxury Surf Choice:
+
+- **Consistent Year-Round Waves**: The bay's orientation provides reliable conditions nearly every day of the year.
+- **Pro-Guided Learning**: Nilathra arranges private sessions with elite ISA-certified instructors who tailor each lesson to your specific skill level.
+- **Handcrafted Equipment**: Experience the ocean on bespoke, locally-crafted wooden surfboards that are as much a work of art as they are a performance tool.
+
+## The Nilathra Surf Experience
+
+At Nilathra Travels, we believe that a day on the water should be followed by an evening of absolute indulgence. Our Weligama surf experiences are curated to ensure that every transition is seamless and every moment is premium.
+
+### 1. Private Yacht Charters & Secret Breaks
+For those who seek the ultimate in privacy, we arrange private yacht charters that take you beyond the main bay to secluded 'secret' breaks along the southern coast. Enjoy a gourmet breakfast on deck before paddling out into untouched waters.
+
+### 2. Post-Surf Wellness
+The physical demand of surfing is best met with curated recovery. Our partner resorts in Weligama offer specialized 'Surfer's Spa' treatments, including deep-tissue Ayurvedic massages and targeted stretching sessions designed by world-class wellness experts.
+
+### 3. Coastal Gastronomy
+After a sunset session, retreat to a private beachfront table. Our chefs curate 'Ocean-to-Plate' dining experiences, featuring the freshest catches of the day prepared with the sophisticated spice palettes that define Sri Lankan fine dining.
+
+## A Synergy of Cultures
+
+What truly sets Weligama apart is its vibrant, multi-layered culture. It is a place where traditional stilt fishermen share the horizon with luxury yachts, and where colonial-era mansions rub shoulders with contemporary glass-fronted boutiques. This cultural richness provides a depth to your stay that goes far beyond the beach.
+
+Weligama is not just a place to surf; it is a place to find your rhythm.
+
+*Ready to catch the perfect wave? Contact Nilathra Travels to curate your bespoke Weligama surf retreat today.*
+        `
+    },
+    {
         title: "The Ultimate Guide to Ultra VIP Travel in Sri Lanka",
         slug: "ultra-vip-travel-sri-lanka",
         date: "March 10, 2026",
@@ -316,7 +362,7 @@ From the Knuckles Range to the Horton Plains, the highlands are calling.
         author: "Heritage Specialist",
         category: "Culture",
         readingTime: "8 min read",
-        image: "/images/kandy_hero.png",
+        image: "/images/dalada.jpg",
         excerpt: "Explore the last royal stronghold of the island. From the Temple of the Tooth to the rhythmic Kandyan dancers, discover the spirit of Kandy.",
         content: `
 # The Soul of Kandy: A Guide to the Sacred Hill Capital
