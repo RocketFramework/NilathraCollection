@@ -14,6 +14,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://nilathra.com"),
   title: {
     default: "Nilathra Collection | Above and Beyond the Norm | Luxury Travel Sri Lanka",
     template: "%s | Nilathra Collection"
