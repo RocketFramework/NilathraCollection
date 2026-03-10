@@ -176,5 +176,128 @@ At Nilathra Travels, we offer four distinct tiers—**Ultra VIP, Luxury, Premium
 
 *Plan your 2026 Sri Lankan odyssey today.*
         `
+    },
+    {
+        title: "The Pearl Route: Authentic Sri Lanka for the Regular Traveler",
+        slug: "regular-travel-sri-lanka-authentic-experience",
+        date: "February 28, 2026",
+        author: "Travel Coordinator",
+        category: "Regular Plan",
+        readingTime: "5 min read",
+        image: "/images/tier_standard.png",
+        excerpt: "High-quality, reliable, and authentic travel doesn't always require a VIP budget. Discover the heart of Sri Lanka with our Regular Plan.",
+        content: `
+# The Pearl Route: Authentic Sri Lanka for the Regular Traveler
+
+At Nilathra Travels, we believe that the beauty of Sri Lanka should be accessible to everyone who appreciates authenticity and reliability.Our ** Regular Plan **, known as the Pearl Route, is designed for the modern traveler who seeks a genuine connection with the island without the need for high - end luxury frills.
+
+## Reliability as a Standard
+The hallmark of the Pearl Route is its unyielding reliability.We have vetted a selection of high - quality guesthouses and 2 - 3 star hotels that offer clean, comfortable, and welcoming environments.These are places where you can experience the famous Sri Lankan hospitality in its most authentic form.
+
+## Professional Guidance
+Even on our most accessible plan, you are never alone.You will be accompanied by a professional Driver - Guide who knows the island's pulse. They are not just drivers; they are your local companions who ensure your logistics are seamless and your experiences are meaningful.
+
+### Why Choose the Pearl Route ?
+- ** Essential Experiences **: We focus on the 'must-see' locations like Sigiriya, Kandy, and the southern beaches.
+- ** Local Gastronomy **: While dining is generally at your discretion(B & B or HB), our guides point you to the best local 'Holes-in-the-wall' and authentic markets.
+- ** Value Driven **: Every dollar spent is optimized for experience, not just for the sake of luxury.
+
+The Pearl Route is for the explorer, the family, and the curious traveler who wants the real Sri Lanka, delivered with Nilathra's signature coordination.
+
+    * Join the journey.Experience the authentic Pearl of the Indian Ocean.*
+        `
+    },
+    {
+        title: "Culinary Odyssey: A Masterclass in Sri Lankan Spices",
+        slug: "culinary-odyssey-sri-lankan-spices",
+        date: "February 25, 2026",
+        author: "Chef de Cuisine",
+        category: "Gastronomy",
+        readingTime: "7 min read",
+        image: "/images/private_chef_luxury_dining_1773073921412.png",
+        excerpt: "Embark on a sensory journey through the spice gardens and kitchens of Sri Lanka. Discover the secrets behind the island's vibrant flavors.",
+        content: `
+# Culinary Odyssey: A Masterclass in Sri Lankan Spices
+
+Sri Lankan food is an explosion of color, aroma, and taste.It is a cuisine shaped by history, trade, and the incredible fertility of the land.In this edition of the Nilathra Journal, we go behind the scenes into the kitchens and spice gardens that define the island's gastronomic legacy.
+
+## The Big Three: Cinnamon, Cardamom, and Pepper
+Sri Lanka was once the 'Spice Island' of the ancient world.Even today, the island produces some of the world's finest spices:
+    - ** Ceylon Cinnamon **: Delicate, sweet, and unique to our shores.
+- ** Black Pepper **: Bold and pungent, harvested from the lush central hills.
+- ** Cardamom **: The 'Queen of Spices', adding a sophisticated floral note to any dish.
+
+## The Art of the Curry
+A Sri Lankan 'Rice and Curry' is not just a meal; it's a ceremony. It typically consists of a central mound of rice surrounded by five to ten different curries, ranging from fiery dhal to creamy beetroot or tangy gotukala sambol.
+
+## Experience the Odyssey with Nilathra
+When you travel with us, gastronomy is at the forefront.Depending on your collection, we offer:
+- ** Private Cooking Masterclasses **: Learn to balance the 21 spices of a traditional Jaffna curry.
+- ** Spice Garden Tours **: Visit organic estates where these spices are grown and harvested.
+- ** Farm - to - Table Dining **: Enjoy ingredients picked just hours before they reach your plate.
+
+Sri Lanka is a feast for the senses.Let us show you the true taste of the island.
+
+* Book your culinary - themed journey today.*
+    `
+    },
+    {
+        title: "Beyond the Shores: Hidden Waterfalls of the Highlands",
+        slug: "hidden-waterfalls-sri-lanka-highlands",
+        date: "February 22, 2026",
+        author: "Adventure Curator",
+        category: "Nature",
+        readingTime: "6 min read",
+        image: "/images/ella_hero.png",
+        excerpt: "Leave the beaches behind and head into the emerald heart of the island. Discover secluded waterfalls and misty peaks away from the crowds.",
+        content: `
+# Beyond the Shores: Hidden Waterfalls of the Highlands
+
+While the golden beaches of the south are iconic, the true soul of Sri Lanka's nature lies in its mountainous interior. The Central Highlands are home to over 300 waterfalls, many tucked away in private estates and jungle clearings accessible only to those in the know.
+
+## The Giants of the Mist
+    - ** Bambarakanda Falls **: The tallest in the island, a majestic silver ribbon falling from a height of 263 meters.
+- ** Diyaluma Falls **: Famous for its natural infinity pools at the top, offering a heart - stopping view of the plains below.
+
+## Secluded Sanctuaries
+At Nilathra, we specialize in 'Off-the-Beaten-Path' nature treks.We can arrange private picnics at secluded waterfalls where you won't see another traveler. Imagine a gourmet lunch served on a granite boulder as the water thunders beside you—this is the Nilathra Nature Experience.
+
+## Sustainable Exploration
+We are committed to preserving the purity of these sites.Our guided treks focus on 'Low Impact' travel, ensuring that the only footprints we leave are the ones we take with us.
+
+From the Knuckles Range to the Horton Plains, the highlands are calling.
+
+* Escape to the emerald heart of Sri Lanka.*
+    `
+    },
+    {
+        title: "The Soul of Kandy: A Guide to the Sacred Hill Capital",
+        slug: "soul-of-kandy-sacred-heritage-guide",
+        date: "February 18, 2026",
+        author: "Heritage Specialist",
+        category: "Culture",
+        readingTime: "8 min read",
+        image: "/images/kandy_hero.png",
+        excerpt: "Explore the last royal stronghold of the island. From the Temple of the Tooth to the rhythmic Kandyan dancers, discover the spirit of Kandy.",
+        content: `
+# The Soul of Kandy: A Guide to the Sacred Hill Capital
+
+Kandy is more than just a city; it is a repository of Sri Lankan history, spirituality, and pride.As the last kingdom to fall to colonial powers, it retains a distinct cultural rhythm that is palpable in its streets and temples.
+
+## The Temple of the Sacred Tooth Relic
+No visit to Sri Lanka is complete without paying respects at the * Sri Dalada Maligawa *.Home to a tooth of the Buddha, it is the most sacred site in the country.We recommend visiting during the evening * Thewava * (offering) ceremony to experience the full intensity of the drummers and the scent of incense.
+
+## The Kandyan Arts
+The heritage of the hills is expressed through its artisans.From intricate brass work and wood carving to the high - energy Kandyan dance, the city is a living museum of craft.
+
+## Curated Kandy Experiences
+    - ** VIP Temple Access **: We arrange discreet entry into the temple complex with private historians.
+- ** Botanical Sovereignty **: A private walk through the Peradeniya Botanical Gardens with an expert botanist.
+- ** Heritage Walk **: Discover the colonial architecture and hidden gems of the city by foot.
+
+Kandy is the spiritual heart of any Sri Lankan journey.Let us guide you through its sacred lanes.
+
+* Discover the legacy of the hill capital.*
+    `
     }
 ];
