@@ -178,7 +178,7 @@ export default function UltraVIPPlan() {
                         transition={{ delay: 0.4 }}
                         className="text-neutral-800 max-w-2xl text-xl font-medium leading-relaxed mb-12"
                     >
-                        Reserved for the world's most discerning travelers.
+                        Reserved for the world&apos;s most discerning travelers.
                         A realm of absolute privacy, bespoke luxury, and peerless security.
                     </motion.p>
 
@@ -307,7 +307,7 @@ export default function UltraVIPPlan() {
                             </div>
                             <h2 className="text-5xl font-serif text-logo-blue tracking-tight">Privacy Architecture</h2>
                             <p className="text-neutral-600 text-xl leading-relaxed font-medium">
-                                Our Ultra VIP tier is a fortified private domain. Beyond luxury, we provide a "Zero-Trace" security architecture designed for high-profile individuals requiring absolute seclusion.
+                                Our Ultra VIP tier is a fortified private domain. Beyond luxury, we provide a &quot;Zero-Trace&quot; security architecture designed for high-profile individuals requiring absolute seclusion.
                             </p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">

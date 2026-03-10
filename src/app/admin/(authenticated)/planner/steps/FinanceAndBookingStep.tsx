@@ -1112,7 +1112,7 @@ export function FinanceAndBookingStep({
                                                         onChange={(e) => {
                                                             if (!editingPO) return;
                                                             const val = e.target.value;
-                                                            let updates: Partial<DBPurchaseOrder> = {};
+                                                            const updates: Partial<DBPurchaseOrder> = {};
                                                             let selectedProvider: any = null;
 
                                                             if (editingPO.vendor_type === 'hotel') {

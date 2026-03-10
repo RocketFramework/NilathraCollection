@@ -26,7 +26,7 @@ export interface AddActivityDTO {
     guide_id?: string; // UUID
 }
 
-export interface UpdateActivityDTO extends Partial<Omit<AddActivityDTO, 'itinerary_id'>> { }
+export type UpdateActivityDTO = Partial<Omit<AddActivityDTO, 'itinerary_id'>>;
 
 export interface AddItineraryDayDTO {
     tour_id: string; // UUID

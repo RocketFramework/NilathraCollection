@@ -47,7 +47,7 @@ export default function PlanRequestFormModal({
         setIsSubmitting(true);
         try {
             // Lazy Auth or get existing user
-            let authResult = null;
+            let authResult: any = null;
             try {
                 authResult = await AuthService.registerTouristByEmail(email);
             } catch (authError) {
@@ -67,7 +67,7 @@ export default function PlanRequestFormModal({
                 start_date: startDate || undefined,
                 special_requirements: specialRequirements || undefined,
                 note: specialRequirements || undefined,
-            }, (authResult as any)?.user?.id);
+            }, authResult?.user?.id || undefined);
 
             setIsSuccess(true);
             setTimeout(() => {

@@ -145,11 +145,11 @@ export default function PlanComparison() {
             {features.map((feature, index) => (
               <tr key={index} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
                 <td className="py-5 px-4 font-bold text-neutral-800 text-sm italic">{feature.name}</td>
-                <td className="py-5 px-4 text-center text-green-800 text-xs font-medium">{(feature as any).regular}</td>
-                <td className="py-5 px-4 text-center text-blue-800 text-xs font-medium">{(feature as any).premium}</td>
-                <td className="py-5 px-4 text-center text-amber-800 text-xs font-medium">{(feature as any).luxury}</td>
-                <td className="py-5 px-4 text-center text-neutral-900 text-xs font-bold font-mono">{(feature as any).ultraVip}</td>
-                <td className="py-5 px-4 text-center text-neutral-500 text-xs italic">{(feature as any).mixed}</td>
+                <td className="py-5 px-4 text-center text-green-800 text-xs font-medium">{feature.regular}</td>
+                <td className="py-5 px-4 text-center text-blue-800 text-xs font-medium">{feature.premium}</td>
+                <td className="py-5 px-4 text-center text-amber-800 text-xs font-medium">{feature.luxury}</td>
+                <td className="py-5 px-4 text-center text-neutral-900 text-xs font-bold font-mono">{feature.ultraVip}</td>
+                <td className="py-5 px-4 text-center text-neutral-500 text-xs italic">{feature.mixed}</td>
               </tr>
             ))}
           </tbody>

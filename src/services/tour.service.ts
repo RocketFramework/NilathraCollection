@@ -106,7 +106,7 @@ export class TourService {
 
         // 3.5 Scaffold Tour Itineraries based on requested duration
         const duration = details.nights || 1;
-        let currentDate = details.start_date ? new Date(details.start_date) : null;
+        const currentDate = details.start_date ? new Date(details.start_date) : null;
 
         for (let i = 1; i <= duration; i++) {
             let dayDate = null;
@@ -150,7 +150,7 @@ export class TourService {
      * Fetches a Tour and reinstates the TripData JSON blob if it exists.
      * If navigating to a fresh tour, it seeds initial data from the request.
      */
-    static async getTourData(tourId: string): Promise<{ tripData: Partial<TripData>, tourMsg: any }> {
+    static async getTourData(tourId: string): Promise<{ tripData: Partial<TripData>, tourMsg: Record<string, any> }> {
         const supabaseAdmin = createAdminClient();
         const { data: tourMsg, error } = await supabaseAdmin
             .from('tours')
@@ -197,7 +197,7 @@ export class TourService {
             clientName: reqInfo?.name || (touristProfile.first_name ? `${touristProfile.first_name} ${touristProfile.last_name}` : (reqInfo?.email || 'New Client Inquiry')),
             clientEmail: reqInfo?.email || tourist?.email || '',
             clientPhone: reqInfo?.phone_number?.toString() || touristProfile.phone || '',
-            status: tourMsg.status as any,
+            status: tourMsg.status as TripData['status'],
             profile: {
                 adults: reqInfo?.adults || details.adults || 2,
                 children: reqInfo?.children || details.children || 0,

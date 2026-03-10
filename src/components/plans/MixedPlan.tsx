@@ -97,7 +97,7 @@ export default function MixedPlan() {
                         <div className="bg-neutral-900 rounded-[3rem] p-12 text-white relative z-10">
                             <h3 className="text-3xl font-serif mb-8">Ready to blend?</h3>
                             <p className="text-neutral-400 mb-10 leading-relaxed">
-                                Our Mixed Collection doesn't have a fixed price.
+                                Our Mixed Collection doesn&apos;t have a fixed price.
                                 It is architected around your budget and your vision.
                             </p>
 

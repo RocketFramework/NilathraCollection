@@ -44,7 +44,7 @@ export default function StandardPremiumPlan() {
                     <div>
                         <h2 className="text-3xl font-serif mb-2">Standard Premium</h2>
                         <p className="text-green-100 max-w-xl">
-                            Excellence in comfort and service at Sri Lanka's leading 5-star establishments.
+                            Excellence in comfort and service at Sri Lanka&apos;s leading 5-star establishments.
                         </p>
                     </div>
                     <div className="text-right bg-white/10 p-6 rounded-2xl">
@@ -58,7 +58,7 @@ export default function StandardPremiumPlan() {
             <div className="p-8">
                 <div className="grid lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
-                        <h3 className="text-lg font-serif text-green-900 mb-4">What's Included</h3>
+                        <h3 className="text-lg font-serif text-green-900 mb-4">What&apos;s Included</h3>
                         <div className="grid sm:grid-cols-2 gap-4">
                             {inclusions.map((item, idx) => (
                                 <div key={idx} className="bg-green-50 p-4 rounded-xl">

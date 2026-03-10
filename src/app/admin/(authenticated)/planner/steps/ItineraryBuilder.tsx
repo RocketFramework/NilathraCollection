@@ -171,7 +171,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
             const inventory = masterData.hotels;
 
             for (let i = 1; i <= routeResult.totalDays; i++) {
-                let selectedHotel = inventory.find(h => h.hotel_class?.includes(tripData.profile.travelStyle)) || inventory[0];
+                const selectedHotel = inventory.find(h => h.hotel_class?.includes(tripData.profile.travelStyle)) || inventory[0];
 
                 if (selectedHotel) {
                     hotels.push({
@@ -233,7 +233,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
     const totalCosts = useMemo(() => {
         let hotels = 0;
         let acts = 0;
-        let rest = 0;
+        const rest = 0;
         let trans = 0;
         const pax = (tripData.profile.adults || 0) + (tripData.profile.children || 0);
 
@@ -403,7 +403,7 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
     const moveBlockDay = (blockId: string, direction: 'prev' | 'next') => {
         const block = tripData.itinerary.find(b => b.id === blockId);
         if (!block) return;
-        let targetDay = block.dayNumber + (direction === 'next' ? 1 : -1);
+        const targetDay = block.dayNumber + (direction === 'next' ? 1 : -1);
         if (targetDay < 1) return;
         updateData({ itinerary: tripData.itinerary.map(b => b.id === blockId ? { ...b, dayNumber: targetDay } : b) });
     };
@@ -445,8 +445,8 @@ export function ItineraryBuilder({ tripData, updateData }: { tripData: TripData,
     const shiftTime = (timeStr: string, shiftMins: number) => {
         if (!timeStr || !timeStr.includes(':')) return timeStr;
         const [hStr, mStr] = timeStr.split(':');
-        let h = parseInt(hStr, 10);
-        let m = parseInt(mStr, 10);
+        const h = parseInt(hStr, 10);
+        const m = parseInt(mStr, 10);
         if (isNaN(h) || isNaN(m)) return timeStr;
         let totalMins = h * 60 + m + shiftMins;
         if (totalMins < 0) totalMins = (24 * 60) + (totalMins % (24 * 60));

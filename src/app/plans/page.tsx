@@ -116,7 +116,7 @@ export default function PlansPage() {
                             // Uniform 2nd-row grid (50% each) for the first 4 cards
                             // Mixed remains full width (100%)
                             const isMixed = plan.id === "mixed";
-                            let colSpan = isMixed ? "md:col-span-12" : "md:col-span-6";
+                            const colSpan = isMixed ? "md:col-span-12" : "md:col-span-6";
 
                             return (
                                 <motion.div

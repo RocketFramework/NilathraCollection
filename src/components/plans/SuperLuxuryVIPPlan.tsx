@@ -126,7 +126,7 @@ export default function SuperLuxuryVIPPlan() {
                         </div>
                         <h2 className="text-4xl font-serif mb-2">Ultra VIP</h2>
                         <p className="text-amber-100 max-w-xl">
-                            The ultimate expression of luxury travel. Reserved for the world's most discerning travelers. Everything included, nothing overlooked.
+                            The ultimate expression of luxury travel. Reserved for the world&apos;s most discerning travelers. Everything included, nothing overlooked.
                         </p>
                     </div>
                     <div className="text-right bg-white/10 p-6 rounded-2xl backdrop-blur-sm">
@@ -153,7 +153,7 @@ export default function SuperLuxuryVIPPlan() {
                         className="bg-amber-100/50 px-8 overflow-hidden"
                     >
                         <div className="py-6 border-b border-amber-200">
-                            <h4 className="font-medium text-amber-900 mb-4">What's Included in Your ${total.toLocaleString()}</h4>
+                            <h4 className="font-medium text-amber-900 mb-4">What&apos;s Included in Your ${total.toLocaleString()}</h4>
                             <div className="grid md:grid-cols-2 gap-4 text-sm">
                                 <div className="space-y-2">
                                     <div className="flex justify-between">

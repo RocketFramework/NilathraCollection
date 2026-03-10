@@ -175,7 +175,7 @@ export default function LuxuryPlan() {
                         transition={{ delay: 0.4 }}
                         className="text-neutral-800 max-w-2xl text-xl font-medium leading-relaxed mb-12"
                     >
-                        An elevated journey through Sri Lanka's most iconic destinations,
+                        An elevated journey through Sri Lanka&apos;s most iconic destinations,
                         featuring 5-star comfort and professional local expertise.
                     </motion.p>
 

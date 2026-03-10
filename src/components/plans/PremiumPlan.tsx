@@ -223,7 +223,7 @@ export default function PremiumPlan() {
                         <h2 className="text-5xl md:text-7xl font-serif text-logo-blue mb-8 tracking-tight">The Emerald Journey</h2>
                         <p className="text-neutral-500 max-w-2xl mx-auto text-lg leading-relaxed">
                             A refined sequence from arrival to exit.
-                            Experience a beautifully paced exploration through Sri Lanka's cultural heart and comfort retreats.
+                            Experience a beautifully paced exploration through Sri Lanka&apos;s cultural heart and comfort retreats.
                         </p>
                     </div>
 
@@ -301,7 +301,7 @@ export default function PremiumPlan() {
                             </div>
                             <h2 className="text-5xl font-serif text-logo-blue tracking-tight">Contemporary Value</h2>
                             <p className="text-neutral-600 text-xl leading-relaxed font-medium">
-                                The Premium tier is for the traveler who appreciates reliable quality, cultural connection, and experienced local guidance. It's a journey that balances iconic sites with authentic discovery.
+                                The Premium tier is for the traveler who appreciates reliable quality, cultural connection, and experienced local guidance. It&apos;s a journey that balances iconic sites with authentic discovery.
                             </p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
@@ -377,7 +377,7 @@ export default function PremiumPlan() {
                                 <div className="p-8 bg-neutral-50 rounded-[2.5rem] border border-neutral-100 hover:border-logo-blue/20 transition-colors">
                                     <Camera size={40} className="text-logo-blue mb-6" />
                                     <h4 className="font-serif text-2xl text-neutral-900 mb-2">Cultural Connection</h4>
-                                    <p className="text-sm text-neutral-500 leading-relaxed font-medium">A strong emphasis on Sri Lanka's living culture, iconic monuments, and immersive local experiences.</p>
+                                    <p className="text-sm text-neutral-500 leading-relaxed font-medium">A strong emphasis on Sri Lanka&apos;s living culture, iconic monuments, and immersive local experiences.</p>
                                 </div>
                             </div>
                         </div>

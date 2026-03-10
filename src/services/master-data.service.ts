@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from '@/utils/supabase/client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 const supabase = createSupabaseClient();
 
@@ -160,7 +161,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
         let query = supabaseClient.from('activities').select('*', { count: 'exact' });
@@ -195,7 +196,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
 
@@ -225,7 +226,7 @@ export class MasterDataService {
             if (!vendors) return { data: [], count: 0 };
 
             // 2. Fetch Vendor Activities along with Activity names
-            const vendorIds = vendors.map((v: any) => v.id);
+            const vendorIds = vendors.map((v: Vendor) => v.id);
             const { data: vendorActivities, error: vaError } = await supabaseClient
                 .from('vendor_activities')
                 .select(`
@@ -242,7 +243,7 @@ export class MasterDataService {
             }
 
             // 3. Join in memory
-            const mappedVendors = (vendors as any[]).map(v => ({
+            const mappedVendors = (vendors as Vendor[]).map(v => ({
                 ...v,
                 vendor_activities: (vendorActivities || [])
                     .filter((va: any) => va.vendor_id === v.id)
@@ -394,7 +395,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
         try {
@@ -423,7 +424,7 @@ export class MasterDataService {
             if (!providers) return { data: [], count: 0 };
 
             // 2. Fetch associated vehicles
-            const providerIds = providers.map((p: any) => p.id);
+            const providerIds = providers.map((p: TransportProvider) => p.id);
             const { data: vehicles, error: vError } = await supabaseClient
                 .from('transport_vehicles')
                 .select('*')
@@ -435,7 +436,7 @@ export class MasterDataService {
             }
 
             // 3. Join in memory
-            const mappedProviders = (providers as any[]).map(p => ({
+            const mappedProviders = (providers as TransportProvider[]).map(p => ({
                 ...p,
                 transport_vehicles: (vehicles || []).filter((v: any) => v.provider_id === p.id)
             }));
@@ -512,7 +513,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
         let query = supabaseClient.from('drivers').select('*, payment_details(*)', { count: 'exact' });
@@ -581,7 +582,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
         let query = supabaseClient.from('tour_guides').select('*, payment_details(*)', { count: 'exact' });
@@ -650,7 +651,7 @@ export class MasterDataService {
         pageSize?: number;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
-        client?: any;
+        client?: SupabaseClient;
     }) {
         const supabaseClient = options?.client || supabase;
         let query = supabaseClient.from('restaurants').select('*, payment_details(*)', { count: 'exact' });

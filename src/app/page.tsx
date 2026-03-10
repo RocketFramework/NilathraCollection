@@ -80,10 +80,10 @@ export default function Home() {
             <h2 className="section-title">A Vision of Pure Hospitality</h2>
             <div className="space-y-6 text-brand-charcoal/70 font-light leading-relaxed text-lg">
               <p>
-                The "Nilathra" vision was born from a simple observation: Sri Lanka's soul is often lost in the noise of mass tourism. We set out to create a collection that doesn't just show you the island, but allows you to feel its pulse through the lens of absolute sovereignty and curated comfort.
+                The &quot;Nilathra&quot; vision was born from a simple observation: Sri Lanka&apos;s soul is often lost in the noise of mass tourism. We set out to create a collection that doesn&apos;t just show you the island, but allows you to feel its pulse through the lens of absolute sovereignty and curated comfort.
               </p>
               <p>
-                Our name, Nilathra, signifies the "Blue Horizon" where the sky meets the Indian Ocean—a symbol of the infinite possibilities our team creates for every guest. Over the last decade, we have transitioned from a boutique concierge to a world-class travel architect, serving a global elite who demand more than just luxury; they demand authenticity, privacy, and impeccable security.
+                Our name, Nilathra, signifies the &quot;Blue Horizon&quot; where the sky meets the Indian Ocean—a symbol of the infinite possibilities our team creates for every guest. Over the last decade, we have transitioned from a boutique concierge to a world-class travel architect, serving a global elite who demand more than just luxury; they demand authenticity, privacy, and impeccable security.
               </p>
               <p>
                 Every itinerary we design is a living masterplan. We analyze traveler personas down to the finest detail—from preferred sleep temperatures and dietary nuances to the specific cultural rhythms of the destinations visited. This is not just travel; it is the art of memory architecture.
@@ -224,7 +224,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <Quote className="mx-auto mb-10 text-brand-gold opacity-50" size={60} />
           <h2 className="font-serif text-3xl md:text-5xl leading-tight mb-12">
-            "An unparalleled experience. From the private villa in Ella to the seamless VIP handling at Colombo, Nilathra Travels exceeded every expectation. True Sri Lankan luxury."
+            &quot;An unparalleled experience. From the private villa in Ella to the seamless VIP handling at Colombo, Nilathra Travels exceeded every expectation. True Sri Lankan luxury.&quot;
           </h2>
           <div className="flex flex-col items-center justify-center gap-4">
             <div className="w-16 h-16 rounded-full border-2 border-brand-gold p-1">

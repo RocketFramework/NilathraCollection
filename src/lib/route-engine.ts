@@ -485,7 +485,7 @@ export class AdvancedRouteEngine {
 
       // Lunch window
       if (!lunchTaken && currentMinutes >= 660 && currentMinutes <= 840) {
-        let lunchStart = Math.max(currentMinutes, 720);
+        const lunchStart = Math.max(currentMinutes, 720);
         if (lunchStart + 60 <= CONSTANTS.DAY_END - 90) {
           if (lunchStart > currentMinutes) {
             events.push({
@@ -554,7 +554,7 @@ export class AdvancedRouteEngine {
     }
 
     // Dinner
-    let dinnerTime = Math.max(t, 1080);
+    const dinnerTime = Math.max(t, 1080);
     if (dinnerTime + 60 <= CONSTANTS.DAY_END) {
       if (dinnerTime > t) {
         events.push({

@@ -34,20 +34,29 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             fetchCountry();
         }, []);
 
-        useEffect(() => {
-            // Split incoming value if it has a country code prefix
+        // SYNC PROPS TO STATE DURING RENDER (Resets internal state when value prop changes)
+        const [prevValue, setPrevValue] = useState(value);
+        if (value !== prevValue) {
+            setPrevValue(value);
             if (typeof value === "string" && value) {
                 const matchedCountry = COUNTRY_CODES.find(country => value.startsWith(country.dialCode));
                 if (matchedCountry) {
-                    setSelectedCountry(matchedCountry);
-                    setPhoneNumber(value.substring(matchedCountry.dialCode.length).trim());
+                    if (selectedCountry.code !== matchedCountry.code) {
+                        setSelectedCountry(matchedCountry);
+                    }
+                    const newNumber = value.substring(matchedCountry.dialCode.length).trim();
+                    if (phoneNumber !== newNumber) {
+                        setPhoneNumber(newNumber);
+                    }
                 } else {
-                    setPhoneNumber(value);
+                    if (phoneNumber !== value) {
+                        setPhoneNumber(value);
+                    }
                 }
-            } else if (value === "") {
+            } else if (value === "" && phoneNumber !== "") {
                 setPhoneNumber("");
             }
-        }, [value]);
+        }
 
         const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const newNumber = e.target.value;

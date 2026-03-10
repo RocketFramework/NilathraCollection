@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
+import { TripData } from '@/app/admin/(authenticated)/planner/types';
 
 export class TouristService {
     /**
@@ -37,11 +38,11 @@ export class TouristService {
         return data.map(tour => {
             const agentData = Array.isArray(tour.agent) ? tour.agent[0] : tour.agent;
             const agentProfile = agentData?.staff_profile?.[0] || {};
-            const tripData = tour.planner_data as any || {};
+            const tripData = tour.planner_data as unknown as TripData || {};
 
             // Extract locations from planner data or fallback
             // We assume the tripData.itinerary has destinations or we use the profile
-            const locations = tripData.profile?.destinations || [];
+            const locations: string[] = []; // TripProfile does not have destinations
 
             return {
                 id: tour.id,
@@ -93,7 +94,7 @@ export class TouristService {
         // Map data to match the UI expectations
         const agentData = Array.isArray(data.agent) ? data.agent[0] : data.agent;
         const agentProfile = agentData?.staff_profile?.[0] || {};
-        const tripData = data.planner_data as any || {};
+        const tripData = data.planner_data as unknown as TripData || {};
 
         // Sort itineraries by day
         const sortedItineraries = (data.itineraries || []).sort((a: any, b: any) => a.day_number - b.day_number);
@@ -113,7 +114,7 @@ export class TouristService {
         return {
             title: data.title,
             status: data.status,
-            destinations: tripData.profile?.destinations || [],
+            destinations: [], // TripProfile does not have destinations
             startDate: data.start_date,
             durationDays: tripData.profile?.durationDays || 0,
             travelers: `${tripData.profile?.adults || 0} Adults${tripData.profile?.children > 0 ? `, ${tripData.profile.children} Children` : ''}`,
