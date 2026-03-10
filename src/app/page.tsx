@@ -76,24 +76,20 @@ export default function Home() {
             viewport={{ once: true }}
             className="space-y-8"
           >
-            <span className="section-subtitle">Since 2012</span>
-            <h2 className="section-title">A Vision of Pure Hospitality</h2>
+            <span className="section-subtitle">A team of hoteliers and planters operating since 2012</span>
+            <h2 className="section-title">Luxury Unfiltered</h2>
             <div className="space-y-6 text-brand-charcoal/70 font-light leading-relaxed text-lg">
               <p>
-                The &quot;Nilathra&quot; vision was born from a simple observation: Sri Lanka&apos;s soul is often lost in the noise of mass tourism. We set out to create a collection that doesn&apos;t just show you the island, but allows you to feel its pulse through the lens of absolute sovereignty and curated comfort.
+                The &quot;Nilathra&quot; vision was born from a passion to showcase Sri Lanka in its purest, most elegant form. We believe that true luxury is not just about the finest hotels or the most expensive cars—it&apos;s about the access to authentic, soul-stirring experiences that remain etched in memory.
               </p>
               <p>
-                Our name, Nilathra, signifies the &quot;Blue Horizon&quot; where the sky meets the Indian Ocean—a symbol of the infinite possibilities our team creates for every guest. Over the last decade, we have transitioned from a boutique concierge to a world-class travel architect, serving a global elite who demand more than just luxury; they demand authenticity, privacy, and impeccable security.
+                Our name, Nilathra, signifies the &quot;Blue Horizon&quot; where the sky meets the Indian Ocean—a symbol of the infinite possibilities our team of hoteliers and planters creates for every guest. Based in Colombo, we have evolved from a boutique concierge to a world-class travel architect, serving a global elite who demand authenticity, privacy, and impeccable security.
               </p>
               <p>
-                Every itinerary we design is a living masterplan. We analyze traveler personas down to the finest detail—from preferred sleep temperatures and dietary nuances to the specific cultural rhythms of the destinations visited. This is not just travel; it is the art of memory architecture.
+                We don&apos;t just book hotels; we build relationships. We don&apos;t just plan routes; we curate narratives. Every itinerary we design is a living masterplan, analyzing traveler personas down to the finest detail to architect the perfect memory of the island.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-8 pt-6">
-              <div>
-                <h4 className="font-serif text-3xl text-brand-green mb-1">500+</h4>
-                <p className="text-xs uppercase tracking-widest text-brand-charcoal/40 font-bold">Bespoke Journeys</p>
-              </div>
+            <div className="grid grid-cols-1 gap-8 pt-6">
               <div>
                 <h4 className="font-serif text-3xl text-brand-green mb-1">12+</h4>
                 <p className="text-xs uppercase tracking-widest text-brand-charcoal/40 font-bold">Years of Excellence</p>

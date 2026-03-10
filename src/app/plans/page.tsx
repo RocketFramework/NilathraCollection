@@ -68,7 +68,7 @@ const plans = [
         priceRange: "Flexible",
         description: "A tailored blend of different tiers throughout your journey for the ultimate personalized experience.",
         icon: LayoutList,
-        href: "/plans/mixed",
+        href: "/custom-plan",
         badge: "Custom Blend",
         image: "/images/plans/mixed.png",
         color: "from-neutral-900/60 via-transparent to-transparent",

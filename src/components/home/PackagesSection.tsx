@@ -73,7 +73,7 @@ const packages = [
         color: "bg-brand-gold",
         textColor: "text-white",
         accent: "text-brand-green",
-        href: "/plans/mixed"
+        href: "/custom-plan"
     },
 ];
 

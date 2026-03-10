@@ -349,7 +349,7 @@ Kandy is the spiritual heart of any Sri Lankan journey. Let us guide you through
         author: "SLTDA Investor Relations",
         category: "Investing",
         readingTime: "12 min read",
-        image: "/images/hero_ella_bridge.png",
+        image: "/images/investment_hero.png",
         excerpt: "Discover why Sri Lanka is the ultimate destination for timeless, sustainable investments in tourism, benefiting from premium returns and a commitment to people and the planet.",
         content: `
 # Sri Lanka: The Heart of the Eastern Hemisphere – A Destination for Sustainable Investment
