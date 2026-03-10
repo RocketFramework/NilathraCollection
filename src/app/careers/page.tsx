@@ -141,12 +141,11 @@ export default function CareersPage() {
                 </div>
             </section>
 
-            {/* Intro Section */}
             <section className="py-24 px-6 md:px-12 bg-white">
                 <div className="max-w-4xl mx-auto text-center space-y-8">
-                    <h2 className="section-title">Nilathra Travels – Career Opportunities</h2>
+                    <h2 className="section-title">Nilathra Collection – Career Opportunities</h2>
                     <p className="text-brand-charcoal/70 text-lg font-light leading-relaxed">
-                        Nilathra Travels is a luxury inbound travel company specializing in ultra-VIP journeys to Sri Lanka. We design bespoke experiences for discerning travelers who expect exceptional service, privacy, and access to extraordinary destinations.
+                        Nilathra Collection is a luxury inbound travel company specializing in ultra-VIP journeys to Sri Lanka. We design bespoke experiences for discerning travelers who expect exceptional service, privacy, and access to extraordinary destinations.
                     </p>
                     <div className="w-24 h-1 bg-brand-gold mx-auto" />
                 </div>
