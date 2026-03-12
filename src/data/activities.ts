@@ -13,24 +13,25 @@ export interface Activity {
     optimal_start_time: string | null;
     optimal_end_time: string | null;
     time_flexible: boolean;
+    images?: string[];
 }
 
 export async function fetchActivities(): Promise<Activity[]> {
     const supabase = createClient();
-    
+
     // Log to verify client is created
     console.log('Supabase client created');
-    
+
     const { data, error, status, statusText } = await supabase
         .from('activities')
         .select('*');
-    
+
     // Detailed logging
     console.log('Status:', status);
     console.log('StatusText:', statusText);
     console.log('Data:', data);
     console.log('Error:', error);
-    
+
     if (error) {
         console.error('Error fetching activities:', {
             message: error.message,

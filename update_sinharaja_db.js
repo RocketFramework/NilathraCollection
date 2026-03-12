@@ -1,0 +1,28 @@
+const { createClient } = require('@supabase/supabase-js');
+const url = 'https://vknibpdhovgcbenkcnaz.supabase.co';
+const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrbmlicGRob3ZnY2JlbmtjbmF6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTk5OTcwNSwiZXhwIjoyMDg3NTc1NzA1fQ.nUr9s0h8noHP6MxZujQS6MG2lcGfK5GyNe1iL5vuCB8';
+
+const supabase = createClient(url, key);
+
+async function updateDatabase() {
+    const imageLinks = [
+        '/images/activities/sinharaja_rainforest_1.png',
+        '/images/activities/sinharaja_rainforest_2.png',
+        '/images/activities/sinharaja_rainforest_3.png'
+    ];
+
+    console.log("Attempting to update record ID 85 (Sinharaja) with images...");
+    const { data, error } = await supabase
+        .from('activities')
+        .update({ images: imageLinks })
+        .eq('id', 85)
+        .select();
+
+    if (error) {
+        console.error("Update failed:", error.message);
+    } else {
+        console.log("Update successful!", data);
+    }
+}
+
+updateDatabase();

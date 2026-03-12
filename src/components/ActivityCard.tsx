@@ -65,24 +65,20 @@ export default function ActivityCard({
         setImageError(null);
 
         try {
-            // Using multiple image sources for redundancy
+            // Check if activity has images from the database
+            if (activity.images && activity.images.length > 0) {
+                const dbImages: LocationImage[] = activity.images.map(url => ({
+                    url,
+                    alt: activity.activity_name,
+                    source: "Nilathra Collection"
+                }));
+                setImages(dbImages);
+                return;
+            }
+
+            // Fallback: Using multiple image sources for redundancy
             const searchQuery = encodeURIComponent(`${activity.location_name} Sri Lanka landmark`);
-
-            // Source 1: Unsplash API (requires API key in production)
-            // For demo, we'll use curated images based on location
             const demoImages = getDemoImages(activity.location_name);
-
-            // In production, you would use:
-            // const unsplashResponse = await fetch(
-            //   `https://api.unsplash.com/search/photos?query=${searchQuery}&client_id=${process.env.UNSPLASH_API_KEY}`
-            // );
-
-            // Source 2: Pexels API (alternative)
-            // const pexelsResponse = await fetch(
-            //   `https://api.pexels.com/v1/search?query=${searchQuery}`,
-            //   { headers: { Authorization: process.env.PEXELS_API_KEY } }
-            // );
-
             setImages(demoImages);
         } catch (error) {
             console.error("Error fetching images:", error);
@@ -234,8 +230,8 @@ export default function ActivityCard({
                 <button
                     onClick={() => onToggle(activity.id)}
                     className={`w-full p-3 rounded-lg border transition-all flex items-center gap-3 ${isSelected
-                            ? 'border-brand-gold bg-brand-gold/5'
-                            : 'border-neutral-200 hover:border-neutral-300'
+                        ? 'border-brand-gold bg-brand-gold/5'
+                        : 'border-neutral-200 hover:border-neutral-300'
                         }`}
                 >
                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'bg-brand-gold border-brand-gold text-white' : 'border-neutral-400'
@@ -283,8 +279,8 @@ export default function ActivityCard({
             <div
                 onClick={() => onToggle(activity.id)}
                 className={`group relative p-5 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden ${isSelected
-                        ? 'border-brand-gold bg-brand-gold/5 shadow-[0_8px_30px_rgba(212,175,55,0.12)] -translate-y-1'
-                        : 'border-neutral-200 bg-white hover:border-brand-gold/50 hover:shadow-md'
+                    ? 'border-brand-gold bg-brand-gold/5 shadow-[0_8px_30px_rgba(212,175,55,0.12)] -translate-y-1'
+                    : 'border-neutral-200 bg-white hover:border-brand-gold/50 hover:shadow-md'
                     }`}
             >
                 <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
@@ -298,8 +294,8 @@ export default function ActivityCard({
                         <Info size={16} />
                     </button>
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors ${isSelected
-                            ? 'bg-brand-gold border-brand-gold text-white'
-                            : 'border-neutral-300 text-transparent group-hover:border-brand-gold/50'
+                        ? 'bg-brand-gold border-brand-gold text-white'
+                        : 'border-neutral-300 text-transparent group-hover:border-brand-gold/50'
                         }`}>
                         <Check size={14} />
                     </div>
@@ -599,8 +595,8 @@ function PopupContent({
                                 onToggle(activity.id);
                             }}
                             className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${isSelected
-                                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                                    : 'bg-brand-gold hover:bg-brand-gold/90 text-white'
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
+                                : 'bg-brand-gold hover:bg-brand-gold/90 text-white'
                                 }`}
                         >
                             {isSelected ? 'Remove from Itinerary' : 'Add to Itinerary'}
